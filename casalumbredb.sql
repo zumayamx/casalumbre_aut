@@ -499,6 +499,10 @@ VALUES ('COMBINADO 20-5', 'Alpha', 20, 5, 2800.0, 1, 0.1375, 0.1875, 40.75, 32);
 INSERT INTO dbo.Liquidos (Codigo, Tipo_Liquido, ID_Liquido_A, ID_Liquido_B, Cantidad_total, Provedor, Metanol, Alcoholes_superiores, [%_Alcohol_vol], Orden_produccion)
 VALUES ('COMBINADO 21-19', 'Alpha', 21, 19, 3500.0, 1, 0.15625, 0.23125, 42.375, 33);
 
+-- Combinación de COMBINADO 15-14 
+INSERT INTO dbo.Liquidos (Codigo, Tipo_Liquido, ID_Liquido_A, ID_Liquido_B, Cantidad_total, Provedor, Metanol, Alcoholes_superiores, [%_Alcohol_vol], Orden_produccion)
+VALUES ('COMBINADO 21-19', 'Beta', 15, 14, 3500.0, 1, 0.15625, 0.23125, 42.375, 34);
+
 DELETE FROM Liquidos;
 DELETE FROM ProductoTerminado;
 DELETE FROM ContenedorLiquido;
@@ -516,6 +520,292 @@ GO
 
 DROP DATABASE casalumbre_db;
 GO
+
+-- Eliminar el procedimiento almacenado si ya existe
+IF OBJECT_ID('ObtenerLiquidosBase', 'P') IS NOT NULL
+DROP PROCEDURE ObtenerLiquidosBase;
+GO
+
+CREATE PROCEDURE ObtenerLiquidosBase
+    @ID_Liquido INT
+AS
+BEGIN
+    WITH CTE_Liquidos AS (
+        -- Selecciona el líquido inicial
+        SELECT 
+            ID_Liquido,
+            Codigo,
+            ID_Liquido_A,
+            ID_Liquido_B,
+            CAST(ID_Liquido AS VARCHAR(MAX)) AS Rastro,
+            0 AS Nivel -- Nivel inicial
+        FROM Liquidos
+        WHERE ID_Liquido = @ID_Liquido
+
+        UNION ALL
+
+        -- Une recursivamente con la tabla de líquidos
+        SELECT 
+            l.ID_Liquido,
+            l.Codigo,
+            l.ID_Liquido_A,
+            l.ID_Liquido_B,
+            CAST(cte.Rastro + '->' + CAST(l.ID_Liquido AS VARCHAR(MAX)) AS VARCHAR(MAX)) AS Rastro,
+            cte.Nivel + 1 -- Incrementar el nivel
+        FROM Liquidos l
+        INNER JOIN CTE_Liquidos cte ON l.ID_Liquido IN (cte.ID_Liquido_A, cte.ID_Liquido_B)
+        WHERE CHARINDEX('->' + CAST(l.ID_Liquido AS VARCHAR(MAX)) + '->', '->' + cte.Rastro + '->') = 0 -- Evitar ciclos y duplicados
+    )
+    SELECT *
+    FROM CTE_Liquidos
+    WHERE ID_Liquido != 1 -- Excluir ID_Liquido = 1 si este no debe ser mostrado
+    ORDER BY Nivel, Rastro -- Ordenar por nivel y rastro
+    OPTION (MAXRECURSION 1000); -- Aumentar las recursiones a 1000
+END
+GO
+
+-- CREATE PROCEDURE ObtenerLiquidosBase
+--     @ID_Liquido INT
+-- AS
+-- BEGIN
+--     WITH CTE_Liquidos AS (
+--         -- Selecciona el líquido inicial
+--         SELECT 
+--             ID_Liquido,
+--             Codigo,
+--             ID_Liquido_A,
+--             ID_Liquido_B,
+--             CAST(ID_Liquido AS VARCHAR(MAX)) AS Rastro,
+--             0 AS Nivel -- Nivel inicial
+--         FROM Liquidos
+--         WHERE ID_Liquido = @ID_Liquido
+
+--         UNION ALL
+
+--         -- Une recursivamente con la tabla de líquidos
+--         SELECT 
+--             l.ID_Liquido,
+--             l.Codigo,
+--             l.ID_Liquido_A,
+--             l.ID_Liquido_B,
+--             CAST(cte.Rastro + '->' + CAST(l.ID_Liquido AS VARCHAR(MAX)) AS VARCHAR(MAX)) AS Rastro,
+--             cte.Nivel + 1 -- Incrementar el nivel
+--         FROM Liquidos l
+--         INNER JOIN CTE_Liquidos cte ON l.ID_Liquido IN (cte.ID_Liquido_A, cte.ID_Liquido_B)
+--         WHERE CHARINDEX(CAST(l.ID_Liquido AS VARCHAR(MAX)), cte.Rastro) = 0 -- Evitar ciclos
+--     )
+--     SELECT *
+--     FROM CTE_Liquidos
+--     ORDER BY Nivel, Rastro -- Ordenar por nivel y rastro
+--     OPTION (MAXRECURSION 1000); -- Aumentar las recursiones a 1000
+-- END
+-- GO
+
+EXEC ObtenerLiquidosBase @ID_Liquido = 23;
+
+-- CREATE PROCEDURE ObtenerLiquidosBase
+--     @ID_Liquido INT
+-- AS
+-- BEGIN
+--     WITH CTE_Liquidos AS (
+--         -- Selecciona el líquido inicial
+--         SELECT 
+--             ID_Liquido,
+--             Codigo,
+--             Tipo_Liquido,
+--             ID_Liquido_A,
+--             ID_Liquido_B,
+--             Cantidad_total,
+--             Fecha_creacion,
+--             Provedor,
+--             Metanol,
+--             Alcoholes_superiores,
+--             [%_Alcohol_vol],
+--             Orden_produccion,
+--             CAST(ID_Liquido AS VARCHAR(MAX)) AS Rastro,
+--             0 AS Nivel -- Nivel inicial
+--         FROM Liquidos
+--         WHERE ID_Liquido = @ID_Liquido
+
+--         UNION ALL
+
+--         -- Une recursivamente con la tabla de líquidos
+--         SELECT 
+--             l.ID_Liquido,
+--             l.Codigo,
+--             l.Tipo_Liquido,
+--             l.ID_Liquido_A,
+--             l.ID_Liquido_B,
+--             l.Cantidad_total,
+--             l.Fecha_creacion,
+--             l.Provedor,
+--             l.Metanol,
+--             l.Alcoholes_superiores,
+--             l.[%_Alcohol_vol],
+--             l.Orden_produccion,
+--             CAST(cte.Rastro + '->' + CAST(l.ID_Liquido AS VARCHAR(MAX)) AS VARCHAR(MAX)) AS Rastro,
+--             cte.Nivel + 1 -- Incrementar el nivel
+--         FROM Liquidos l
+--         INNER JOIN CTE_Liquidos cte ON l.ID_Liquido IN (cte.ID_Liquido_A, cte.ID_Liquido_B)
+--         WHERE CHARINDEX(CAST(l.ID_Liquido AS VARCHAR(MAX)), cte.Rastro) = 0 -- Evitar ciclos
+--     )
+--     SELECT *
+--     FROM CTE_Liquidos
+--     ORDER BY Nivel, Rastro -- Ordenar por nivel y rastro
+--     OPTION (MAXRECURSION 1000); -- Aumentar las recursiones a 1000
+-- END
+-- GO
+
+-- CREATE PROCEDURE ObtenerLiquidosBase
+--     @ID_Liquido INT
+-- AS
+-- BEGIN
+--     WITH CTE_Liquidos AS (
+--         -- Selecciona el líquido inicial
+--         SELECT 
+--             ID_Liquido,
+--             Codigo,
+--             Tipo_Liquido,
+--             ID_Liquido_A,
+--             ID_Liquido_B,
+--             Cantidad_total,
+--             Fecha_creacion,
+--             Provedor,
+--             Metanol,
+--             Alcoholes_superiores,
+--             [%_Alcohol_vol],
+--             Orden_produccion,
+--             CAST(ID_Liquido AS VARCHAR(MAX)) AS Rastro -- Añadir columna para el rastro
+--         FROM Liquidos
+--         WHERE ID_Liquido = @ID_Liquido
+
+--         UNION ALL
+
+--         -- Une recursivamente con la tabla de líquidos
+--         SELECT 
+--             l.ID_Liquido,
+--             l.Codigo,
+--             l.Tipo_Liquido,
+--             l.ID_Liquido_A,
+--             l.ID_Liquido_B,
+--             l.Cantidad_total,
+--             l.Fecha_creacion,
+--             l.Provedor,
+--             l.Metanol,
+--             l.Alcoholes_superiores,
+--             l.[%_Alcohol_vol],
+--             l.Orden_produccion,
+--             CAST(cte.Rastro + '->' + CAST(l.ID_Liquido AS VARCHAR(MAX)) AS VARCHAR(MAX)) AS Rastro -- Actualizar el rastro
+--         FROM Liquidos l
+--         INNER JOIN CTE_Liquidos cte ON l.ID_Liquido IN (cte.ID_Liquido_A, cte.ID_Liquido_B)
+--         WHERE CHARINDEX(CAST(l.ID_Liquido AS VARCHAR(MAX)), cte.Rastro) = 0 -- Evitar ciclos
+--     )
+--     SELECT *
+--     FROM CTE_Liquidos
+--     OPTION (MAXRECURSION 1000); -- Aumentar las recursiones a 1000
+-- END
+-- GO
+-- -- Crear el procedimiento almacenado ajustado
+-- CREATE PROCEDURE ObtenerLiquidosBase
+--     @ID_Liquido INT
+-- AS
+-- BEGIN
+--     WITH CTE_Liquidos AS (
+--         -- Selecciona el líquido inicial
+--         SELECT 
+--             ID_Liquido,
+--             Codigo,
+--             Tipo_Liquido,
+--             ID_Liquido_A,
+--             ID_Liquido_B,
+--             Cantidad_total,
+--             Fecha_creacion,
+--             Provedor,
+--             Metanol,
+--             Alcoholes_superiores,
+--             [%_Alcohol_vol],
+--             Orden_produccion
+--         FROM Liquidos
+--         WHERE ID_Liquido = @ID_Liquido
+
+--         UNION ALL
+
+--         -- Une recursivamente con la tabla de líquidos
+--         SELECT 
+--             l.ID_Liquido,
+--             l.Codigo,
+--             l.Tipo_Liquido,
+--             l.ID_Liquido_A,
+--             l.ID_Liquido_B,
+--             l.Cantidad_total,
+--             l.Fecha_creacion,
+--             l.Provedor,
+--             l.Metanol,
+--             l.Alcoholes_superiores,
+--             l.[%_Alcohol_vol],
+--             l.Orden_produccion
+--         FROM Liquidos l
+--         INNER JOIN CTE_Liquidos cte ON l.ID_Liquido IN (cte.ID_Liquido_A, cte.ID_Liquido_B)
+--     )
+--     SELECT *
+--     FROM CTE_Liquidos
+--     OPTION (MAXRECURSION 1000); -- Limitar las recursiones a 100
+-- END
+-- GO
+
+-- -- Eliminar el procedimiento almacenado si ya existe
+-- IF OBJECT_ID('ObtenerLiquidosBase', 'P') IS NOT NULL
+-- DROP PROCEDURE ObtenerLiquidosBase;
+-- GO
+
+-- -- Crear el procedimiento almacenado ajustado
+-- CREATE PROCEDURE ObtenerLiquidosBase
+--     @ID_Liquido INT
+-- AS
+-- BEGIN
+--     WITH CTE_Liquidos AS (
+--         -- Selecciona el líquido inicial
+--         SELECT 
+--             ID_Liquido,
+--             Codigo,
+--             Tipo_Liquido,
+--             ID_Liquido_A,
+--             ID_Liquido_B,
+--             Cantidad_total,
+--             Fecha_creacion,
+--             Provedor,
+--             Metanol,
+--             Alcoholes_superiores,
+--             [%_Alcohol_vol],
+--             Orden_produccion
+--         FROM Liquidos
+--         WHERE ID_Liquido = @ID_Liquido
+
+--         UNION ALL
+
+--         -- Une recursivamente con la tabla de líquidos
+--         SELECT 
+--             l.ID_Liquido,
+--             l.Codigo,
+--             l.Tipo_Liquido,
+--             l.ID_Liquido_A,
+--             l.ID_Liquido_B,
+--             l.Cantidad_total,
+--             l.Fecha_creacion,
+--             l.Provedor,
+--             l.Metanol,
+--             l.Alcoholes_superiores,
+--             l.[%_Alcohol_vol],
+--             l.Orden_produccion
+--         FROM Liquidos l
+--         INNER JOIN CTE_Liquidos cte ON l.ID_Liquido IN (cte.ID_Liquido_A, cte.ID_Liquido_B)
+--         WHERE l.ID_Liquido_A <> l.ID_Liquido_B -- Evitar bucles infinitos
+--     )
+--     SELECT *
+--     FROM CTE_Liquidos
+--     OPTION (MAXRECURSION 100); -- Limitar las recursiones a 100
+-- END
+-- GO
 
 -- -- Query para dropear el procedimiento almacenado si existe
 -- IF OBJECT_ID('dbo.ObtenerCombinacionesPorNiveles', 'P') IS NOT NULL
@@ -682,3 +972,7 @@ GO
 
 -- Ejemplo de ejecución del procedimiento almacenado
 -- EXEC ObtenerCombinacionesPorNiveles @ID_Liquido = 22;
+
+-- Para obtener la lista de sesiones activas
+SELECT session_id, status, start_time, command, database_id, user_id, blocking_session_id, wait_type
+FROM sys.dm_exec_requests;
