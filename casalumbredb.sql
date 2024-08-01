@@ -1,6 +1,5 @@
 
 -- Create the datbase name: casalumbre_db;
-
 CREATE DATABASE casalumbre_db;
 
 -- Use this database;
@@ -39,7 +38,7 @@ INSERT INTO TipoContenedor (Nombre, Capacidad) VALUES
 ('TANQUE D', 30000),
 ('TANQUE E', 30000),
 ('TOTE XX', 1000),
-('PORR�N XX', 20),
+('PORRÓN XX', 20),
 ('TAMBO XX', 200);
 
 -- Create the EstatusContenedor table to store the status of containers
@@ -62,7 +61,7 @@ INSERT INTO EstatusContenedor (Descripcion) VALUES
 ('EN USO'),
 ('DISPONIBLE'),
 ('NO DISPONIBLE'),
-('DA�ADO'),
+('DAÑADO'),
 ('CUARENTENA');
 
 -- Create the UbicacionContenedor table to store the locations of containers
@@ -114,7 +113,7 @@ INSERT INTO EstatusLiquido (Descripcion) VALUES
 
 -- Drop the table if it already exists to avoid errors
 IF OBJECT_ID('dbo.Provedores', 'U') IS NOT NULL
-DROP TABLE dbo.Proveedores;
+DROP TABLE dbo.Provedores;
 GO
 
 -- Create the table
@@ -168,8 +167,8 @@ INSERT INTO Liquidos (Codigo, Tipo_Liquido, ID_Liquido_A, ID_Liquido_B, Cantidad
 
 -- Insert base liquids
 INSERT INTO Liquidos (Codigo, Tipo_Liquido, ID_Liquido_A, ID_Liquido_B, Cantidad_total, Fecha_creacion, Provedor, Metanol, Alcoholes_superiores, [%_Alcohol_vol], Orden_produccion) VALUES
-('ESPAD�N', 'Alpha', 1, 1, 500, GETDATE(), 1, 0.1, 0.2, 40.0, 2), -- 2
-('TOBAL�', 'Beta', 1, 1, 300, GETDATE(), 2, 0.1, 0.2, 42.0, 3), -- 3
+('ESPADÍN', 'Alpha', 1, 1, 500, GETDATE(), 1, 0.1, 0.2, 40.0, 2), -- 2
+('TOBALÁ', 'Beta', 1, 1, 300, GETDATE(), 2, 0.1, 0.2, 42.0, 3), -- 3
 ('MEZCAL DM', 'Alpha', 1, 1, 700, GETDATE(), 3, 0.2, 0.3, 45.0, 4), -- 4
 ('MEZCAL ODT', 'Beta', 1, 1, 600, GETDATE(), 4, 0.1, 0.1, 38.0, 5), -- 5
 ('CABEZAS', 'Alpha', 1, 1, 100, GETDATE(), 5, 0.3, 0.4, 50.0, 6), -- 6
@@ -216,16 +215,16 @@ INSERT INTO Contenedores (Nombre, Tipo, Ubicacion, Fecha_ingreso, Fecha_baja, Es
 ('Contenedor 1', 1, 1, GETDATE(), NULL, 1), -- ID_Tipo 1, ID_Ubicacion 1, ID_Estatus 1 (EN USO)
 ('Contenedor 2', 2, 2, GETDATE(), NULL, 2), -- ID_Tipo 2, ID_Ubicacion 2, ID_Estatus 2 (DISPONIBLE)
 ('Contenedor 3', 3, 3, GETDATE(), NULL, 3), -- ID_Tipo 3, ID_Ubicacion 3, ID_Estatus 3 (NO DISPONIBLE)
-('Contenedor 4', 4, 4, GETDATE(), NULL, 4), -- ID_Tipo 4, ID_Ubicacion 4, ID_Estatus 4 (DA�ADO)
+('Contenedor 4', 4, 4, GETDATE(), NULL, 4), -- ID_Tipo 4, ID_Ubicacion 4, ID_Estatus 4 (DAÑADO)
 ('Contenedor 5', 5, 5, GETDATE(), NULL, 2); -- ID_Tipo 5, ID_Ubicacion 5, ID_Estatus 2 (DISPONIBLE)
 
 -- Insert containers that have been decommissioned (Fecha_baja is specified)
 INSERT INTO Contenedores (Nombre, Tipo, Ubicacion, Fecha_ingreso, Fecha_baja, Estatus) VALUES
 ('Contenedor 6', 6, 1, '2022-01-01 12:00:00', '2023-01-01 12:00:00', 3), -- ID_Tipo 6, ID_Ubicacion 1, ID_Estatus 3 (NO DISPONIBLE)
-('Contenedor 7', 7, 2, '2022-02-01 12:00:00', '2023-02-01 12:00:00', 4), -- ID_Tipo 7, ID_Ubicacion 2, ID_Estatus 4 (DA�ADO)
+('Contenedor 7', 7, 2, '2022-02-01 12:00:00', '2023-02-01 12:00:00', 4), -- ID_Tipo 7, ID_Ubicacion 2, ID_Estatus 4 (DAÑADO)
 ('Contenedor 8', 8, 3, '2022-03-01 12:00:00', '2023-03-01 12:00:00', 5), -- ID_Tipo 8, ID_Ubicacion 3, ID_Estatus 5 (CUARENTENA)
 ('Contenedor 9', 9, 4, '2022-04-01 12:00:00', '2023-04-01 12:00:00', 3), -- ID_Tipo 9, ID_Ubicacion 4, ID_Estatus 3 (NO DISPONIBLE)
-('Contenedor 10', 10, 5, '2022-05-01 12:00:00', '2023-05-01 12:00:00', 4); -- ID_Tipo 10, ID_Ubicacion 5, ID_Estatus 4 (DA�ADO)
+('Contenedor 10', 10, 5, '2022-05-01 12:00:00', '2023-05-01 12:00:00', 4); -- ID_Tipo 10, ID_Ubicacion 5, ID_Estatus 4 (DAÑADO)
 
 -- Create the ContenedorLiquido table to store the relationship between containers and liquids
 
@@ -252,8 +251,8 @@ CREATE TABLE dbo.ContenedorLiquido (
 -- Insert data into the ContenedorLiquido table
 
 INSERT INTO ContenedorLiquido (ID_Contenedor, ID_Liquido, Cantidad_dentro, Persona_encargada, Fecha_transferencia, Estatus_Liquido) VALUES
-(1, 2, 100.0, 'Usuario1', '2023-06-15 10:00:00', 1), -- Contenedor 1, ESPAD�N, CUARENTENA
-(2, 3, 200.0, 'Usuario2', '2023-06-20 11:00:00', 2), -- Contenedor 2, TOBAL�, APROBADO 1
+(1, 2, 100.0, 'Usuario1', '2023-06-15 10:00:00', 1), -- Contenedor 1, ESPADÍN, CUARENTENA
+(2, 3, 200.0, 'Usuario2', '2023-06-20 11:00:00', 2), -- Contenedor 2, TOBALÁ, APROBADO 1
 (3, 4, 150.0, 'Usuario3', '2023-06-25 12:00:00', 3), -- Contenedor 3, MEZCAL DM, APROBADO 2
 (4, 5, 300.0, 'Usuario4', '2023-06-30 13:00:00', 4), -- Contenedor 4, MEZCAL ODT, EN PROCESO
 (5, 6, 400.0, 'Usuario5', '2023-07-05 14:00:00', 1), -- Contenedor 5, CABEZAS, CUARENTENA
@@ -306,6 +305,11 @@ INSERT INTO ProductoTerminado (ID_Producto, Fecha_termino, Numero_botellas) VALU
 -- It returns details about the container, liquid, quantity inside, responsible person,
 -- transfer date, and the status of the liquid.
 
+-- Drop the stored procedure if it already exists
+IF OBJECT_ID('GetHistorialLiquidosContenedor', 'P') IS NOT NULL
+DROP PROCEDURE GetHistorialLiquidosContenedor;
+GO
+
 GO
 CREATE PROCEDURE GetHistorialLiquidosContenedor
     @ID_Contenedor INT
@@ -334,7 +338,7 @@ END;
 GO
 
 -- Call the stored procedure GetHistorialLiquidosContenedor with a specific container ID
-EXEC GetHistorialLiquidosContenedor @ID_Contenedor = 3;
+EXEC GetHistorialLiquidosContenedor @ID_Contenedor = 1;
 
 -- Drop the stored procedure if it already exists
 IF OBJECT_ID('GetCapacidadDisponibleContenedor', 'P') IS NOT NULL
@@ -361,8 +365,320 @@ GO
 -- Call the stored procedure
 EXEC GetCapacidadDisponibleContenedor @ID_Contenedor = 2;
 
-																																																												
+-- Drop the stored procedure if it already exists
+IF OBJECT_ID('InsertarNuevoContenedorLiquido', 'P') IS NOT NULL
+DROP PROCEDURE InsertarNuevoContenedorLiquido;
+GO
 
+-- Create the stored procedure to insert a new record into the ContenedorLiquido table
+CREATE PROCEDURE InsertarNuevoContenedorLiquido
+    @ID_Contenedor INT,
+    @ID_Liquido INT,
+    @Cantidad_dentro DECIMAL(10, 2),
+    @Persona_encargada VARCHAR(255),
+    @Fecha_transferencia DATETIME,
+    @Estatus_Liquido INT
+AS
+BEGIN
+    INSERT INTO dbo.ContenedorLiquido (ID_Contenedor, ID_Liquido, Cantidad_dentro, Persona_encargada, Fecha_transferencia, Estatus_Liquido)
+    VALUES (@ID_Contenedor, @ID_Liquido, @Cantidad_dentro, @Persona_encargada, @Fecha_transferencia, @Estatus_Liquido);
+END;
+GO
+
+-- Call the stored procedure to insert a new record
+EXEC InsertarNuevoContenedorLiquido 
+    @ID_Contenedor = 1,
+    @ID_Liquido = 2,
+    @Cantidad_dentro = 100.00,
+    @Persona_encargada = 'Usuario1',
+    @Fecha_transferencia = '2023-06-15 10:00:00.000',
+    @Estatus_Liquido = 1;
+GO
+
+-- Drop the stored procedure if it already exists
+IF OBJECT_ID('InsertarNuevoLiquido', 'P') IS NOT NULL
+DROP PROCEDURE InsertarNuevoLiquido;
+GO
+
+-- Create the stored procedure to insert a new record into the Liquidos table
+CREATE PROCEDURE InsertarNuevoLiquido
+    @Codigo VARCHAR(255),
+    @Tipo_Liquido VARCHAR(255),
+    @ID_Liquido_A INT,
+    @ID_Liquido_B INT,
+    @Cantidad_total DECIMAL(10, 2),
+    @Fecha_creacion DATETIME,
+    @Provedor INT,
+    @Metanol DECIMAL(10, 2),
+    @Alcoholes_superiores DECIMAL(10, 2),
+    @Porcentaje_Alcohol_vol DECIMAL(10, 2),
+    @Orden_produccion INT
+AS
+BEGIN
+    INSERT INTO dbo.Liquidos 
+    (
+        Codigo,
+        Tipo_Liquido,
+        ID_Liquido_A,
+        ID_Liquido_B,
+        Cantidad_total,
+        Fecha_creacion,
+        Provedor,
+        Metanol,
+        Alcoholes_superiores,
+        [%_Alcohol_vol],
+        Orden_produccion
+    )
+    VALUES 
+    (
+        @Codigo,
+        @Tipo_Liquido,
+        @ID_Liquido_A,
+        @ID_Liquido_B,
+        @Cantidad_total,
+        @Fecha_creacion,
+        @Provedor,
+        @Metanol,
+        @Alcoholes_superiores,
+        @Porcentaje_Alcohol_vol,
+        @Orden_produccion
+    );
+END;
+GO
+
+-- Call the stored procedure to insert a new record
+EXEC InsertarNuevoLiquido 
+    @Codigo = 'NuevoCodigo',
+    @Tipo_Liquido = 'Alpha',
+    @ID_Liquido_A = 1,
+    @ID_Liquido_B = 1,
+    @Cantidad_total = 100.00,
+    @Fecha_creacion = '2024-07-30 13:16:58.970',
+    @Provedor = 1,
+    @Metanol = 0.10,
+    @Alcoholes_superiores = 1.20,
+    @Porcentaje_Alcohol_vol = 40.00,
+    @Orden_produccion = 17;
+GO
+
+---------------------------------- TEST CASES --------------------------------------------
+-- This code will be removed in the future, so be carefully.
 SELECT * FROM Liquidos;
 
 SELECT * FROM EstatusContenedor;
+
+SELECT * FROM Contenedores;
+
+SELECT * FROM ContenedorLiquido;
+
+SELECT * FROM EstatusLiquido;
+
+SELECT * FROM ProductoTerminado;
+
+-- Insert containers that have been decommissioned (Fecha_baja is specified)
+INSERT INTO Contenedores (Nombre, Tipo, Ubicacion, Fecha_ingreso, Fecha_baja, Estatus) VALUES
+('Contenedor 11', 6, 1, GETDATE(), NULL, 2) -- ID_Tipo 6, ID_Ubicacion 1, ID_Estatus 3 (NO DISPONIBLE)
+
+-- Combinación de COMBINADO 5 (ID 16) y COMBINADO 1 (ID 12)
+INSERT INTO dbo.Liquidos (Codigo, Tipo_Liquido, ID_Liquido_A, ID_Liquido_B, Cantidad_total, Provedor, Metanol, Alcoholes_superiores, [%_Alcohol_vol], Orden_produccion)
+VALUES ('COMBINADO 16-12', 'Alpha', 16, 12, 700.0, 5, 0.175, 0.275, 44.00, 29);
+
+-- Combinación de COMBINADO 6 (ID 18) y MEZCAL DM (ID 4)
+INSERT INTO dbo.Liquidos (Codigo, Tipo_Liquido, ID_Liquido_A, ID_Liquido_B, Cantidad_total, Provedor, Metanol, Alcoholes_superiores, [%_Alcohol_vol], Orden_produccion)
+VALUES ('COMBINADO 18-4', 'Alpha', 18, 4, 1500.0, 1, 0.175, 0.30, 43.00, 30);
+
+-- Combinación de COMBINADO 18-4 (ID 18) y COMBINADO 16-12 (ID 19)
+INSERT INTO dbo.Liquidos (Codigo, Tipo_Liquido, ID_Liquido_A, ID_Liquido_B, Cantidad_total, Provedor, Metanol, Alcoholes_superiores, [%_Alcohol_vol], Orden_produccion)
+VALUES ('COMBINADO 18-19', 'Alpha', 18, 19, 2200.0, 1, 0.175, 0.275, 43.50, 31);
+
+-- Combinación de COMBINADO 18-19 (ID 20) y MEZCAL ODT (ID 5)
+INSERT INTO dbo.Liquidos (Codigo, Tipo_Liquido, ID_Liquido_A, ID_Liquido_B, Cantidad_total, Provedor, Metanol, Alcoholes_superiores, [%_Alcohol_vol], Orden_produccion)
+VALUES ('COMBINADO 20-5', 'Alpha', 20, 5, 2800.0, 1, 0.1375, 0.1875, 40.75, 32);
+
+-- Combinación de COMBINADO 20-5 (ID 21) y COMBINADO 16-12 (ID 19)
+INSERT INTO dbo.Liquidos (Codigo, Tipo_Liquido, ID_Liquido_A, ID_Liquido_B, Cantidad_total, Provedor, Metanol, Alcoholes_superiores, [%_Alcohol_vol], Orden_produccion)
+VALUES ('COMBINADO 21-19', 'Alpha', 21, 19, 3500.0, 1, 0.15625, 0.23125, 42.375, 33);
+
+DELETE FROM Liquidos;
+DELETE FROM ProductoTerminado;
+DELETE FROM ContenedorLiquido;
+DELETE FROM Contenedores;
+
+USE master;
+DROP DATABASE casalumbre_db;
+GO
+
+USE master;
+GO
+
+ALTER DATABASE casalumbre_db SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+GO
+
+DROP DATABASE casalumbre_db;
+GO
+
+-- -- Query para dropear el procedimiento almacenado si existe
+-- IF OBJECT_ID('dbo.ObtenerCombinacionesPorNiveles', 'P') IS NOT NULL
+--     DROP PROCEDURE dbo.ObtenerCombinacionesPorNiveles;
+-- GO
+
+-- -- Procedimiento almacenado para obtener los líquidos con los que fue construido un líquido combinado por niveles
+-- CREATE PROCEDURE dbo.ObtenerCombinacionesPorNiveles
+--     @ID_Liquido INT
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+
+--     -- CTE recursivo para obtener los niveles de combinaciones de líquidos
+--     WITH CTE_Liquidos AS (
+--         -- Nivel 0: Inicia con el líquido dado
+--         SELECT 
+--             ID_Liquido, 
+--             Codigo, 
+--             Tipo_Liquido, 
+--             ID_Liquido_A, 
+--             ID_Liquido_B, 
+--             Cantidad_total, 
+--             Fecha_creacion, 
+--             Provedor, 
+--             Metanol, 
+--             Alcoholes_superiores, 
+--             [%_Alcohol_vol], 
+--             Orden_produccion,
+--             0 AS Nivel,
+--             ID_Liquido AS Raiz_ID
+--         FROM dbo.Liquidos
+--         WHERE ID_Liquido = @ID_Liquido
+
+--         UNION ALL
+
+--         -- Recursivamente agrega los líquidos base
+--         SELECT 
+--             l1.ID_Liquido, 
+--             l1.Codigo, 
+--             l1.Tipo_Liquido, 
+--             l1.ID_Liquido_A, 
+--             l1.ID_Liquido_B, 
+--             l1.Cantidad_total, 
+--             l1.Fecha_creacion, 
+--             l1.Provedor, 
+--             l1.Metanol, 
+--             l1.Alcoholes_superiores, 
+--             l1.[%_Alcohol_vol], 
+--             l1.Orden_produccion,
+--             cte.Nivel + 1 AS Nivel,
+--             cte.Raiz_ID
+--         FROM dbo.Liquidos l1
+--         INNER JOIN CTE_Liquidos cte
+--             ON l1.ID_Liquido = cte.ID_Liquido_A
+--         WHERE l1.ID_Liquido_A != 1 OR l1.ID_Liquido_B != 1
+
+--         UNION ALL
+
+--         SELECT 
+--             l2.ID_Liquido, 
+--             l2.Codigo, 
+--             l2.Tipo_Liquido, 
+--             l2.ID_Liquido_A, 
+--             l2.ID_Liquido_B, 
+--             l2.Cantidad_total, 
+--             l2.Fecha_creacion, 
+--             l2.Provedor, 
+--             l2.Metanol, 
+--             l2.Alcoholes_superiores, 
+--             l2.[%_Alcohol_vol], 
+--             l2.Orden_produccion,
+--             cte.Nivel + 1 AS Nivel,
+--             cte.Raiz_ID
+--         FROM dbo.Liquidos l2
+--         INNER JOIN CTE_Liquidos cte
+--             ON l2.ID_Liquido = cte.ID_Liquido_B
+--         WHERE l2.ID_Liquido_A != 1 OR l2.ID_Liquido_B != 1
+--     )
+--     -- Selecciona y ordena los resultados del CTE
+--     SELECT 
+--         Raiz_ID,
+--         Nivel,
+--         ID_Liquido,
+--         Codigo,
+--         Tipo_Liquido,
+--         ID_Liquido_A,
+--         ID_Liquido_B,
+--         Cantidad_total,
+--         Fecha_creacion,
+--         Provedor,
+--         Metanol,
+--         Alcoholes_superiores,
+--         [%_Alcohol_vol],
+--         Orden_produccion
+--     FROM CTE_Liquidos
+--     ORDER BY Raiz_ID, Nivel, ID_Liquido;
+-- END;
+-- GO
+
+-- Ejemplo de ejecución del procedimiento almacenado
+-- EXEC dbo.ObtenerCombinacionesPorNiveles @ID_Liquido = 22;
+
+-- -- Query para dropear el procedimiento almacenado si existe
+-- IF OBJECT_ID('ObtenerCombinacionesPorNiveles', 'P') IS NOT NULL
+--     DROP PROCEDURE ObtenerCombinacionesPorNiveles;
+-- GO
+
+-- -- Procedimiento almacenado para obtener los líquidos con los que fue construido un líquido combinado por niveles
+-- CREATE PROCEDURE ObtenerCombinacionesPorNiveles
+--     @ID_Liquido INT
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+
+--     -- CTE recursivo para obtener los niveles de combinaciones de líquidos
+--     WITH CTE_Liquidos AS (
+--         -- Nivel 0: Inicia con el líquido dado
+--         SELECT 
+--             ID_Liquido, 
+--             Codigo, 
+--             Tipo_Liquido, 
+--             ID_Liquido_A, 
+--             ID_Liquido_B, 
+--             Cantidad_total, 
+--             Fecha_creacion, 
+--             Provedor, 
+--             Metanol, 
+--             Alcoholes_superiores, 
+--             [%_Alcohol_vol], 
+--             Orden_produccion,
+--             0 AS Nivel
+--         FROM dbo.Liquidos
+--         WHERE ID_Liquido = @ID_Liquido
+
+--         UNION ALL
+
+--         -- Recursivamente agrega los líquidos base
+--         SELECT 
+--             l.ID_Liquido, 
+--             l.Codigo, 
+--             l.Tipo_Liquido, 
+--             l.ID_Liquido_A, 
+--             l.ID_Liquido_B, 
+--             l.Cantidad_total, 
+--             l.Fecha_creacion, 
+--             l.Provedor, 
+--             l.Metanol, 
+--             l.Alcoholes_superiores, 
+--             l.[%_Alcohol_vol], 
+--             l.Orden_produccion,
+--             cte.Nivel + 1 AS Nivel
+--         FROM dbo.Liquidos l
+--         INNER JOIN CTE_Liquidos cte
+--             ON l.ID_Liquido IN (cte.ID_Liquido_A, cte.ID_Liquido_B)
+--         WHERE l.ID_Liquido_A != 1 OR l.ID_Liquido_B != 1
+--     )
+--     -- Selecciona y ordena los resultados del CTE
+--     SELECT * 
+--     FROM CTE_Liquidos
+--     ORDER BY Nivel, ID_Liquido;
+-- END;
+-- GO
+
+-- Ejemplo de ejecución del procedimiento almacenado
+-- EXEC ObtenerCombinacionesPorNiveles @ID_Liquido = 22;
