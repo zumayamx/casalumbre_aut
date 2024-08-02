@@ -560,14 +560,26 @@ BEGIN
 END
 GO
 
-EXEC ObtenerLiquidosBaseW @ID_Liquido = 65;
+EXEC ObtenerLiquidosBaseW @ID_Liquido = 68;
 SELECT * FROM Liquidos;
 
 INSERT INTO Liquidos (
     Codigo, Tipo_Liquido, ID_Liquido_A, ID_Liquido_B, Cantidad_total, Fecha_creacion, Provedor, Metanol, Alcoholes_superiores, [%_Alcohol_vol], Orden_produccion, ID_Transaccion) 
-    VALUES ('BASE8', 'Alpha', 4, 8, 1000.0, '2024-08-01 12:52:34.303', 4, 5.0, 0.5, 40.0, 56, 26);
+    VALUES ('C1', 'Alpha', 4, 8, 1000.0, '2024-08-01 12:52:34.303', 4, 5.0, 0.5, 40.0, 56, 1);
 
+INSERT INTO Liquidos ( -- 74
+    Codigo, Tipo_Liquido, ID_Liquido_A, ID_Liquido_B, Cantidad_total, Fecha_creacion, Provedor, Metanol, Alcoholes_superiores, [%_Alcohol_vol], Orden_produccion, ID_Transaccion) 
+    VALUES ('C1.1', 'Alpha', 73, 3, 1000.0, '2024-08-01 12:52:34.303', 4, 5.0, 0.5, 40.0, 56, 2);
 
+INSERT INTO Liquidos ( -- 75
+    Codigo, Tipo_Liquido, ID_Liquido_A, ID_Liquido_B, Cantidad_total, Fecha_creacion, Provedor, Metanol, Alcoholes_superiores, [%_Alcohol_vol], Orden_produccion, ID_Transaccion) 
+    VALUES ('C1.1', 'Alpha', 74, 2, 1000.0, '2024-08-01 12:52:34.303', 4, 5.0, 0.5, 40.0, 56, 2);
+
+INSERT INTO Liquidos ( -- 76
+    Codigo, Tipo_Liquido, ID_Liquido_A, ID_Liquido_B, Cantidad_total, Fecha_creacion, Provedor, Metanol, Alcoholes_superiores, [%_Alcohol_vol], Orden_produccion, ID_Transaccion) 
+    VALUES ('C1.1', 'Alpha', 75, 9, 1000.0, '2024-08-01 12:52:34.303', 4, 5.0, 0.5, 40.0, 56, 3);
+
+EXEC ObtenerLiquidosBaseW @ID_Liquido = 76;
 SELECT * FROM Liquidos;
 
 DELETE FROM Liquidos WHERE ID_Liquido > 16;
