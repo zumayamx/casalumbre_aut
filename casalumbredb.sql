@@ -5,475 +5,349 @@ CREATE DATABASE casalumbre_db;
 -- Use this database;
 USE casalumbre_db;
 
--- Create the TipoContenedor table to store different container types and their capacities
-
--- Drop the table if it already exists to avoid errors
-IF OBJECT_ID('dbo.TipoContenedor', 'U') IS NOT NULL
-DROP TABLE dbo.TipoContenedor;
+-- Drop the table if it exists
+IF OBJECT_ID('dbo.tipos_contenedor', 'U') IS NOT NULL
+DROP TABLE dbo.tipos_contenedor;
 GO
 
--- Create the table
-CREATE TABLE dbo.TipoContenedor (
-    ID_Tipo INT NOT NULL IDENTITY(1,1),    -- Unique identifier for each container type
-    Nombre VARCHAR(32) NOT NULL,           -- Name of the container type
-    Capacidad DECIMAL(10, 2) NOT NULL,     -- Capacity of the container type
-    PRIMARY KEY (ID_Tipo)                  -- Set ID_Tipo as the primary key
+-- Create the table with the updated column name
+CREATE TABLE tipos_contenedor (
+    id_tipo_contenedor INT NOT NULL IDENTITY(1,1) PRIMARY KEY, -- Unique identifier for the type of container
+    nombre VARCHAR(32) NOT NULL, -- Name of the container type
+    capacidad_lts DECIMAL(10, 2) NOT NULL -- Capacity of the container in liters
 );
 
--- Insert data into the TipoContenedor table
+-- Insert multiple container types into the tipos_contenedor table
+INSERT INTO tipos_contenedor (nombre, capacidad_lts) VALUES 
+('TANQUE 1', 50000.00),
+('TANQUE 2', 50000.00),
+('TANQUE 3', 50000.00),
+('TANQUE 4', 50000.00),
+('TANQUE 5', 30000.00),
+('TANQUE 6', 30000.00),
+('TANQUE 7', 30000.00),
+('TANQUE 8', 30000.00),
+('TANQUE 9', 30000.00),
+('TANQUE A', 30000.00),
+('TANQUE B', 30000.00),
+('TANQUE C', 30000.00),
+('TANQUE D', 30000.00),
+('TANQUE E', 30000.00),
+('TOTE XX', 1000.00),
+('PORRÓN XX', 20.00),
+('TAMBO XX', 200.00);
 
-INSERT INTO TipoContenedor (Nombre, Capacidad) VALUES
-('TANQUE 1', 50000),
-('TANQUE 2', 50000),
-('TANQUE 3', 50000),
-('TANQUE 4', 50000),
-('TANQUE 5', 30000),
-('TANQUE 6', 30000),
-('TANQUE 7', 30000),
-('TANQUE 8', 30000),
-('TANQUE 9', 30000),
-('TANQUE A', 30000),
-('TANQUE B', 30000),
-('TANQUE C', 30000),
-('TANQUE D', 30000),
-('TANQUE E', 30000),
-('TOTE XX', 1000),
-('PORRÓN XX', 20),
-('TAMBO XX', 200);
-
--- Create the EstatusContenedor table to store the status of containers
-
--- Drop the table if it already exists to avoid errors
-IF OBJECT_ID('dbo.EstatusContenedor', 'U') IS NOT NULL
-DROP TABLE dbo.EstatusContenedor;
+-- Drop the table if it exists
+IF OBJECT_ID('dbo.ubicaciones_contenedor', 'U') IS NOT NULL
+DROP TABLE dbo.ubicaciones_contenedor;
 GO
 
--- Create the table
-CREATE TABLE dbo.EstatusContenedor (
-    ID_Estatus INT NOT NULL IDENTITY(1,1),    -- Unique identifier for each status
-    Descripcion VARCHAR(32) NOT NULL,         -- Description of the status
-    PRIMARY KEY (ID_Estatus)                  -- Set ID_Estatus as the primary key
+-- Create the table with the correct structure
+CREATE TABLE ubicaciones_contenedor (
+    id_ubicacion_contenedor INT NOT NULL IDENTITY(1,1) PRIMARY KEY, -- Unique identifier for the container location
+    descripcion VARCHAR(32) NOT NULL -- Description of the container location
 );
 
--- Insert data into the EstatusContenedor table
-
-INSERT INTO EstatusContenedor (Descripcion) VALUES
-('EN USO'),
-('DISPONIBLE'),
-('NO DISPONIBLE'),
-('DAÑADO'),
-('CUARENTENA');
-
--- Create the UbicacionContenedor table to store the locations of containers
-
--- Drop the table if it already exists to avoid errors
-IF OBJECT_ID('dbo.UbicacionContenedor', 'U') IS NOT NULL
-DROP TABLE dbo.UbicacionContenedor;
-GO
-
--- Create the table
-CREATE TABLE dbo.UbicacionContenedor (
-    ID_Ubicacion INT NOT NULL IDENTITY(1,1),    -- Unique identifier for each location
-    Descripcion VARCHAR(32) NOT NULL,           -- Description of the location
-    PRIMARY KEY (ID_Ubicacion)                  -- Set ID_Ubicacion as the primary key
-);
-
--- Insert data into the UbicacionContenedor table
-
-INSERT INTO UbicacionContenedor (Descripcion) VALUES
+-- Insert multiple container locations into the ubicaciones_contenedor table
+INSERT INTO ubicaciones_contenedor (descripcion) VALUES 
 ('DM4'),
 ('ODT-ENV'),
 ('BETA'),
 ('ODT1'),
 ('LAB');
 
--- Create the EstatusLiquido table to store the status of liquids
-
--- Drop the table if it already exists to avoid errors
-IF OBJECT_ID('dbo.EstatusLiquido', 'U') IS NOT NULL
-DROP TABLE dbo.EstatusLiquido;
+-- Drop the table if it exists
+IF OBJECT_ID('dbo.estatus_contenedor', 'U') IS NOT NULL
+DROP TABLE dbo.estatus_contenedor;
 GO
 
--- Create the table
-CREATE TABLE dbo.EstatusLiquido (
-    ID_Estatus INT NOT NULL IDENTITY(1,1),    -- Unique identifier for each liquid status
-    Descripcion VARCHAR(32) NOT NULL,         -- Description of the liquid status
-    PRIMARY KEY (ID_Estatus)                  -- Set ID_Estatus as the primary key
+-- Create the table with the correct structure
+CREATE TABLE estatus_contenedor (
+    id_estatus_contenedor INT NOT NULL IDENTITY(1,1) PRIMARY KEY, -- Unique identifier for the container status
+    descripcion VARCHAR(32) NOT NULL -- Description of the container status
 );
 
--- Insert data into the EstatusLiquido table
+-- Insert multiple status descriptions into the estatus_contenedor table
+INSERT INTO estatus_contenedor (descripcion) VALUES 
+('EN USO'),
+('DISPONIBLE'),
+('NO DISPONIBLE'),
+('DAÑADO'),
+('CUARENTENA');
 
-INSERT INTO EstatusLiquido (Descripcion) VALUES
+-- Drop the table if it exists
+IF OBJECT_ID('dbo.contenedores', 'U') IS NOT NULL
+DROP TABLE dbo.contenedores;
+GO
+
+-- Create the table with the correct structure and foreign keys
+CREATE TABLE contenedores (
+    id_contenedor INT NOT NULL IDENTITY(1,1) PRIMARY KEY, -- Unique identifier for the container
+    nombre VARCHAR(32) NOT NULL, -- Name of the container
+    id_tipo INT NOT NULL, -- Foreign key referencing tipos_contenedor
+    id_ubicacion INT NOT NULL, -- Foreign key referencing ubicaciones_contenedor
+    fecha_alta DATE DEFAULT GETDATE(), -- Registration date of the container
+    fecha_baja DATE, -- Deregistration date of the container
+    id_estatus INT NOT NULL, -- Foreign key referencing estatus_contenedor
+    FOREIGN KEY (id_tipo) REFERENCES tipos_contenedor(id_tipo_contenedor),
+    FOREIGN KEY (id_ubicacion) REFERENCES ubicaciones_contenedor(id_ubicacion_contenedor),
+    FOREIGN KEY (id_estatus) REFERENCES estatus_contenedor(id_estatus_contenedor)
+);
+
+-- Insert 15 container records into the contenedores table
+
+-- 5 containers that have been decommissioned (fecha_baja not null)
+INSERT INTO contenedores (nombre, id_tipo, id_ubicacion, fecha_alta, fecha_baja, id_estatus) VALUES
+('TANQUE A', 1, 1, '2021-01-01', '2022-01-01', 4), -- 4 - DAÑADO
+('TANQUE B', 2, 2, '2021-02-01', '2022-02-01', 4), -- 4 - DAÑADO
+('TANQUE C', 3, 3, '2021-03-01', '2022-03-01', 4), -- 4 - DAÑADO
+('TANQUE D', 4, 4, '2021-04-01', '2022-04-01', 4), -- 4 - DAÑADO
+('TANQUE E', 5, 5, '2021-05-01', '2022-05-01', 4); -- 4 - DAÑADO
+
+-- 10 active containers (fecha_baja is null)
+INSERT INTO contenedores (nombre, id_tipo, id_ubicacion, fecha_alta, id_estatus) VALUES
+('TANQUE F', 1, 1, '2022-06-01', 1), -- 1 - EN USO
+('TANQUE G', 2, 2, '2022-07-01', 1), -- 1 - EN USO
+('TANQUE H', 3, 3, '2022-08-01', 1), -- 1 - EN USO
+('TANQUE I', 4, 4, '2022-09-01', 1), -- 1 - EN USO
+('TANQUE J', 5, 5, '2022-10-01', 1), -- 1 - EN USO
+('TANQUE K', 1, 1, '2022-11-01', 1), -- 1 - EN USO
+('TANQUE L', 2, 2, '2022-12-01', 1), -- 1 - EN USO
+('TANQUE M', 3, 3, '2023-01-01', 1), -- 1 - EN USO
+('TANQUE N', 4, 4, '2023-02-01', 1), -- 1 - EN USO
+('TANQUE O', 5, 5, '2023-03-01', 1); -- 1 - EN USO
+
+-- Drop the table if it exists
+IF OBJECT_ID('dbo.estatus_liquido', 'U') IS NOT NULL
+DROP TABLE dbo.estatus_liquido;
+GO
+
+-- Create the table with the correct structure
+CREATE TABLE estatus_liquido (
+    id_estatus_liquido INT NOT NULL IDENTITY(1,1) PRIMARY KEY, -- Unique identifier for the liquid status
+    descripcion VARCHAR(32) NOT NULL -- Description of the liquid status
+);
+
+-- Insert multiple status descriptions into the estatus_liquido table
+INSERT INTO estatus_liquido (descripcion) VALUES 
 ('CUARENTENA'),
 ('APROBADO 1'),
 ('APROBADO 2'),
 ('EN PROCESO');
 
--- Create the Proveedores table to store supplier information
-
--- Drop the table if it already exists to avoid errors
-IF OBJECT_ID('dbo.Provedores', 'U') IS NOT NULL
-DROP TABLE dbo.Provedores;
+-- Drop the table if it exists
+IF OBJECT_ID('dbo.proveedores', 'U') IS NOT NULL
+DROP TABLE dbo.proveedores;
 GO
 
--- Create the table
-CREATE TABLE dbo.Provedores (
-    ID_Proveedor INT NOT NULL IDENTITY(1,1),    -- Unique identifier for each supplier
-    Nombre VARCHAR(32) NOT NULL,                -- Name of the supplier
-    PRIMARY KEY (ID_Proveedor)                  -- Set ID_Proveedor as the primary key
+-- Create the table with the correct structure
+CREATE TABLE proveedores (
+    id_proveedor INT NOT NULL IDENTITY(1,1) PRIMARY KEY, -- Unique identifier for the supplier
+    nombre VARCHAR(32) NOT NULL -- Name of the supplier
 );
 
--- Insert data into the Proveedores table
+-- Insert multiple supplier names into the proveedores table
+INSERT INTO proveedores (nombre) VALUES 
+('Proveedor A'),
+('Proveedor B'),
+('Proveedor C'),
+('Proveedor D'),
+('Proveedor E');
 
-INSERT INTO Provedores (Nombre) VALUES
-('Proveedor 1'),
-('Proveedor 2'),
-('Proveedor 3'),
-('Proveedor 4'),
-('Proveedor 5');
-
--- Create the Liquidos table to store liquid information and their relationships
-
--- Drop the table if it already exists to avoid errors
-IF OBJECT_ID('dbo.Liquidos', 'U') IS NOT NULL
-DROP TABLE dbo.Liquidos;
+-- Drop the table if it exists
+IF OBJECT_ID('dbo.tipo_liquido', 'U') IS NOT NULL
+DROP TABLE dbo.tipo_liquido;
 GO
 
--- Create the table
-CREATE TABLE dbo.Liquidos (
-    ID_Liquido INT NOT NULL IDENTITY(1,1),    -- Unique identifier for each liquid
-    Codigo VARCHAR(32) NOT NULL,              -- Code for the liquid
-    Tipo_Liquido VARCHAR(5) CHECK (Tipo_Liquido IN ('Alpha', 'Beta')) NOT NULL, -- Type of the liquid
-    ID_Liquido_A INT NOT NULL DEFAULT 1,      -- Reference to another liquid (self-referencing)
-    ID_Liquido_B INT NOT NULL DEFAULT 1,      -- Reference to another liquid (self-referencing)
-    Cantidad_total DECIMAL(10, 1) NOT NULL,   -- Total amount of the liquid
-    Fecha_creacion DATETIME DEFAULT GETDATE(),-- Creation date and time of the record
-    Provedor INT NOT NULL,                    -- Reference to the supplier
-    Metanol DECIMAL(5, 2),                    -- Methanol content
-    Alcoholes_superiores DECIMAL(5, 2),       -- Higher alcohols content
-    [%_Alcohol_vol] DECIMAL(5, 2),            -- Alcohol by volume percentage
-    Orden_produccion INT NOT NULL,            -- Production order identifier
-    PRIMARY KEY (ID_Liquido),                 -- Set ID_Liquido as the primary key
-    FOREIGN KEY (ID_Liquido_A) REFERENCES dbo.Liquidos(ID_Liquido), -- Self-referencing foreign key
-    FOREIGN KEY (ID_Liquido_B) REFERENCES dbo.Liquidos(ID_Liquido), -- Self-referencing foreign key
-    FOREIGN KEY (Provedor) REFERENCES dbo.Provedores(ID_Proveedor) -- Foreign key to Proveedores table
+-- Create the table with the correct structure
+CREATE TABLE tipo_liquido (
+    id_tipo_liquido INT NOT NULL IDENTITY(1,1) PRIMARY KEY, -- Unique identifier for the liquid type
+    descripcion VARCHAR(32) NOT NULL -- Description of the liquid type
 );
 
--- Insert data into the Liquidos table
+-- Insert the initial liquid types into the tipo_liquido table
+INSERT INTO tipo_liquido (descripcion) VALUES 
+('alpha'),
+('beta');
 
--- Insert the 'Ninguno' record to handle base liquids
-INSERT INTO Liquidos (Codigo, Tipo_Liquido, ID_Liquido_A, ID_Liquido_B, Cantidad_total, Fecha_creacion, Provedor, Metanol, Alcoholes_superiores, [%_Alcohol_vol], Orden_produccion) VALUES
-('Ninguno', 'Alpha', 1, 1, 0, GETDATE(), 1, 0, 0, 0, 1); -- 1
-
--- Insert base liquids
-INSERT INTO Liquidos (Codigo, Tipo_Liquido, ID_Liquido_A, ID_Liquido_B, Cantidad_total, Fecha_creacion, Provedor, Metanol, Alcoholes_superiores, [%_Alcohol_vol], Orden_produccion) VALUES
-('ESPADÍN', 'Alpha', 1, 1, 500, GETDATE(), 1, 0.1, 0.2, 40.0, 2), -- 2
-('TOBALÁ', 'Beta', 1, 1, 300, GETDATE(), 2, 0.1, 0.2, 42.0, 3), -- 3
-('MEZCAL DM', 'Alpha', 1, 1, 700, GETDATE(), 3, 0.2, 0.3, 45.0, 4), -- 4
-('MEZCAL ODT', 'Beta', 1, 1, 600, GETDATE(), 4, 0.1, 0.1, 38.0, 5), -- 5
-('CABEZAS', 'Alpha', 1, 1, 100, GETDATE(), 5, 0.3, 0.4, 50.0, 6), -- 6
-('CORAZON', 'Beta', 1, 1, 200, GETDATE(), 1, 0.2, 0.2, 48.0, 7), -- 7
-('COLAS', 'Alpha', 1, 1, 150, GETDATE(), 2, 0.1, 0.3, 35.0, 8), -- 8
-('ORDINARIO', 'Beta', 1, 1, 250, GETDATE(), 3, 0.2, 0.4, 46.0, 9), -- 9
-('AGUA', 'Alpha', 1, 1, 800, GETDATE(), 4, 0.0, 0.0, 0.0, 10), -- 10
-('MEZCAL A', 'Beta', 1, 1, 400, GETDATE(), 5, 0.1, 0.1, 44.0, 11); -- 11
-
--- Insert some combinations of the base liquids
-INSERT INTO Liquidos (Codigo, Tipo_Liquido, ID_Liquido_A, ID_Liquido_B, Cantidad_total, Fecha_creacion, Provedor, Metanol, Alcoholes_superiores, [%_Alcohol_vol], Orden_produccion) VALUES
-('COMBINADO 1', 'Alpha', 2, 3, 400, GETDATE(), 1, 0.15, 0.25, 43.0, 12), -- 12
-('COMBINADO 2', 'Beta', 4, 5, 500, GETDATE(), 2, 0.2, 0.3, 41.0, 13), -- 13
-('COMBINADO 3', 'Alpha', 6, 7, 350, GETDATE(), 3, 0.25, 0.35, 47.0, 14), -- 14
-('COMBINADO 4', 'Beta', 8, 9, 450, GETDATE(), 4, 0.1, 0.2, 39.0, 15), -- 15
-('COMBINADO 5', 'Alpha', 10, 2, 300, GETDATE(), 5, 0.2, 0.3, 45.0, 16); -- 16
-
--- Create the Contenedores table to store container information
-
--- Drop the table if it already exists to avoid errors
-IF OBJECT_ID('dbo.Contenedores', 'U') IS NOT NULL
-DROP TABLE dbo.Contenedores;
+-- Drop the table if it exists
+IF OBJECT_ID('dbo.liquidos', 'U') IS NOT NULL
+DROP TABLE dbo.liquidos;
 GO
 
--- Create the table
-CREATE TABLE dbo.Contenedores (
-    ID_Contenedor INT NOT NULL IDENTITY(1,1),  -- Unique identifier for each container
-    Nombre VARCHAR(32) NOT NULL,               -- Name of the container, maybe drop it in the future?
-    Tipo INT NOT NULL,                         -- Reference to the container type
-    Ubicacion INT NOT NULL,                    -- Reference to the container location
-    Fecha_ingreso DATETIME DEFAULT GETDATE(),  -- Ingress date and time of the container
-    Fecha_baja DATETIME NULL,                  -- Date and time when the container was decommissioned (nullable)
-    Estatus INT NOT NULL,                      -- Reference to the container status
-    PRIMARY KEY (ID_Contenedor),               -- Set ID_Contenedor as the primary key
-    FOREIGN KEY (Tipo) REFERENCES dbo.TipoContenedor(ID_Tipo),         -- Foreign key to TipoContenedor table
-    FOREIGN KEY (Ubicacion) REFERENCES dbo.UbicacionContenedor(ID_Ubicacion), -- Foreign key to UbicacionContenedor table
-    FOREIGN KEY (Estatus) REFERENCES dbo.EstatusContenedor(ID_Estatus) -- Foreign key to EstatusContenedor table
+-- Create the table with the correct structure and foreign keys
+CREATE TABLE liquidos (
+    id_liquido INT NOT NULL IDENTITY(1,1) PRIMARY KEY, -- Unique identifier for the liquid
+    codigo VARCHAR(32) NOT NULL, -- Code of the liquid
+    id_tipo INT NOT NULL, -- Foreign key referencing tipo_liquido
+    cantidad_total_lts DECIMAL(10, 2) NOT NULL, -- Total amount of liquid in liters
+    fecha_produccion DATE DEFAULT GETDATE(), -- Production date of the liquid
+    id_proveedor INT NOT NULL, -- Foreign key referencing proveedores
+    metanol DECIMAL(5, 2), -- Amount of methanol
+    alcoholes_sup DECIMAL(5, 2), -- Amount of superior alcohols
+    porcentaje_alchol_vol DECIMAL(5, 2), -- Percentage of alcohol by volume
+    orden_produccion INT NOT NULL, -- Production order
+    id_estatus INT NOT NULL, -- Foreign key referencing estatus_liquido
+    FOREIGN KEY (id_tipo) REFERENCES tipo_liquido(id_tipo_liquido),
+    FOREIGN KEY (id_proveedor) REFERENCES proveedores(id_proveedor),
+    FOREIGN KEY (id_estatus) REFERENCES estatus_liquido(id_estatus_liquido)
 );
 
--- Insert data into the Contenedores table
+-- Insert multiple liquid records into the liquidos table
 
--- Insert active containers (Fecha_baja is NULL)
-INSERT INTO Contenedores (Nombre, Tipo, Ubicacion, Fecha_ingreso, Fecha_baja, Estatus) VALUES
-('Contenedor 1', 1, 1, GETDATE(), NULL, 1), -- ID_Tipo 1, ID_Ubicacion 1, ID_Estatus 1 (EN USO)
-('Contenedor 2', 2, 2, GETDATE(), NULL, 2), -- ID_Tipo 2, ID_Ubicacion 2, ID_Estatus 2 (DISPONIBLE)
-('Contenedor 3', 3, 3, GETDATE(), NULL, 3), -- ID_Tipo 3, ID_Ubicacion 3, ID_Estatus 3 (NO DISPONIBLE)
-('Contenedor 4', 4, 4, GETDATE(), NULL, 4), -- ID_Tipo 4, ID_Ubicacion 4, ID_Estatus 4 (DAÑADO)
-('Contenedor 5', 5, 5, GETDATE(), NULL, 2); -- ID_Tipo 5, ID_Ubicacion 5, ID_Estatus 2 (DISPONIBLE)
+-- Ensure the estatus is not CUARENTENA
+INSERT INTO liquidos (codigo, id_tipo, cantidad_total_lts, fecha_produccion, id_proveedor, metanol, alcoholes_sup, porcentaje_alchol_vol, orden_produccion, id_estatus) VALUES
+('ESPADÍN', 1, 500.00, GETDATE(), 1, 1.50, 0.20, 40.00, 1001, 2), -- 2 - APROBADO 1
+('TOBALÁ', 1, 300.00, GETDATE(), 2, 1.20, 0.30, 38.00, 1002, 2), -- 2 - APROBADO 1
+('MEZCAL DM', 1, 1000.00, GETDATE(), 3, 2.00, 0.10, 42.00, 1003, 2), -- 2 - APROBADO 1
+('MEZCAL ODT', 1, 800.00, GETDATE(), 4, 1.80, 0.25, 39.00, 1004, 3), -- 3 - APROBADO 2
+('CABEZAS', 1, 600.00, GETDATE(), 5, 1.60, 0.15, 41.00, 1005, 3), -- 3 - APROBADO 2
+('CORAZON', 1, 900.00, GETDATE(), 1, 1.70, 0.22, 40.50, 1006, 2), -- 2 - APROBADO 1
+('COLAS', 1, 700.00, GETDATE(), 2, 1.40, 0.18, 39.50, 1007, 2), -- 2 - APROBADO 1
+('ORDINARIO', 1, 400.00, GETDATE(), 3, 1.30, 0.20, 38.50, 1008, 2), -- 2 - APROBADO 1
+('AGUA', 1, 100.00, GETDATE(), 4, 0.00, 0.00, 0.00, 1009, 3), -- 3 - APROBADO 2
+('MEZCAL A', 1, 750.00, GETDATE(), 5, 1.50, 0.25, 40.00, 1010, 2); -- 2 - APROBADO 1
 
--- Insert containers that have been decommissioned (Fecha_baja is specified)
-INSERT INTO Contenedores (Nombre, Tipo, Ubicacion, Fecha_ingreso, Fecha_baja, Estatus) VALUES
-('Contenedor 6', 6, 1, '2022-01-01 12:00:00', '2023-01-01 12:00:00', 3), -- ID_Tipo 6, ID_Ubicacion 1, ID_Estatus 3 (NO DISPONIBLE)
-('Contenedor 7', 7, 2, '2022-02-01 12:00:00', '2023-02-01 12:00:00', 4), -- ID_Tipo 7, ID_Ubicacion 2, ID_Estatus 4 (DAÑADO)
-('Contenedor 8', 8, 3, '2022-03-01 12:00:00', '2023-03-01 12:00:00', 5), -- ID_Tipo 8, ID_Ubicacion 3, ID_Estatus 5 (CUARENTENA)
-('Contenedor 9', 9, 4, '2022-04-01 12:00:00', '2023-04-01 12:00:00', 3), -- ID_Tipo 9, ID_Ubicacion 4, ID_Estatus 3 (NO DISPONIBLE)
-('Contenedor 10', 10, 5, '2022-05-01 12:00:00', '2023-05-01 12:00:00', 4); -- ID_Tipo 10, ID_Ubicacion 5, ID_Estatus 4 (DAÑADO)
-
--- Create the ContenedorLiquido table to store the relationship between containers and liquids
-
--- Drop the table if it already exists to avoid errors
-IF OBJECT_ID('dbo.ContenedorLiquido', 'U') IS NOT NULL
-DROP TABLE dbo.ContenedorLiquido;
+-- Drop the table if it exists
+IF OBJECT_ID('dbo.contenedores_liquido', 'U') IS NOT NULL
+DROP TABLE dbo.contenedores_liquido;
 GO
 
--- Create the table
-CREATE TABLE dbo.ContenedorLiquido (
-    ID_Producto INT NOT NULL IDENTITY(1,1),     -- Unique identifier for each record
-    ID_Contenedor INT NOT NULL,                 -- Reference to the container
-    ID_Liquido INT NOT NULL,                    -- Reference to the liquid
-    Cantidad_dentro DECIMAL(10, 2) NOT NULL,    -- Amount of liquid inside the container
-    Persona_encargada VARCHAR(32) NOT NULL,     -- Person in charge of the transfer
-    Fecha_transferencia DATETIME DEFAULT GETDATE(), -- Date and time of the transfer
-    Estatus_Liquido INT NOT NULL,               -- Status of the liquid
-    PRIMARY KEY (ID_Producto),                  -- Set ID_Producto as the primary key
-    FOREIGN KEY (ID_Contenedor) REFERENCES dbo.Contenedores(ID_Contenedor), -- Foreign key to Contenedores table
-    FOREIGN KEY (ID_Liquido) REFERENCES dbo.Liquidos(ID_Liquido),           -- Foreign key to Liquidos table
-    FOREIGN KEY (Estatus_Liquido) REFERENCES dbo.EstatusLiquido(ID_Estatus) -- Foreign key to EstatusLiquido table
+-- Create the table with the correct structure and foreign keys
+CREATE TABLE trasacciones_liquido_contenedor (
+    id_liquido_contendor INT NOT NULL IDENTITY(1,1) PRIMARY KEY, -- Unique identifier for the container-liquid relation
+    id_contenedor INT NOT NULL, -- Foreign key referencing contenedores
+    id_liquido INT NOT NULL, -- Foreign key referencing liquidos
+    cantidad_liquido_lts DECIMAL(10, 2) NOT NULL, -- Amount of liquid in the container in liters
+    persona_encargada VARCHAR(32) NOT NULL, -- Person responsible for the operation
+    FOREIGN KEY (id_contenedor) REFERENCES contenedores(id_contenedor),
+    FOREIGN KEY (id_liquido) REFERENCES liquidos(id_liquido)
 );
 
--- Insert data into the ContenedorLiquido table
+-- Insert 5 container-liquid relations into the contenedores_liquido table
 
-INSERT INTO ContenedorLiquido (ID_Contenedor, ID_Liquido, Cantidad_dentro, Persona_encargada, Fecha_transferencia, Estatus_Liquido) VALUES
-(1, 2, 100.0, 'Usuario1', '2023-06-15 10:00:00', 1), -- Contenedor 1, ESPADÍN, CUARENTENA
-(2, 3, 200.0, 'Usuario2', '2023-06-20 11:00:00', 2), -- Contenedor 2, TOBALÁ, APROBADO 1
-(3, 4, 150.0, 'Usuario3', '2023-06-25 12:00:00', 3), -- Contenedor 3, MEZCAL DM, APROBADO 2
-(4, 5, 300.0, 'Usuario4', '2023-06-30 13:00:00', 4), -- Contenedor 4, MEZCAL ODT, EN PROCESO
-(5, 6, 400.0, 'Usuario5', '2023-07-05 14:00:00', 1), -- Contenedor 5, CABEZAS, CUARENTENA
-(1, 7, 250.0, 'Usuario1', '2023-07-10 15:00:00', 2), -- Contenedor 1, CORAZON, APROBADO 1
-(2, 8, 100.0, 'Usuario2', '2023-07-15 16:00:00', 3), -- Contenedor 2, COLAS, APROBADO 2
-(3, 9, 350.0, 'Usuario3', '2023-07-20 17:00:00', 4), -- Contenedor 3, ORDINARIO, EN PROCESO
-(4, 10, 200.0, 'Usuario4', '2023-07-25 18:00:00', 1), -- Contenedor 4, AGUA, CUARENTENA
-(5, 11, 500.0, 'Usuario5', '2023-07-30 19:00:00', 2), -- Contenedor 5, MEZCAL A, APROBADO 1
-(1, 12, 150.0, 'Usuario1', '2023-08-01 08:00:00', 3), -- Contenedor 1, COMBINADO 1, APROBADO 2
-(2, 13, 250.0, 'Usuario2', '2023-08-05 09:00:00', 4), -- Contenedor 2, COMBINADO 2, EN PROCESO
-(3, 14, 300.0, 'Usuario3', GETDATE(), 1), -- Contenedor 3, COMBINADO 3, CUARENTENA
-(4, 15, 400.0, 'Usuario4', GETDATE(), 2), -- Contenedor 4, COMBINADO 4, APROBADO 1
-(5, 16, 200.0, 'Usuario5', GETDATE(), 3); -- Contenedor 5, COMBINADO 5, APROBADO 2
+-- Ensure the containers are "EN USO" and the liquids are not "CUARENTENA"
+INSERT INTO trasacciones_liquido_contenedor (id_contenedor, id_liquido, cantidad_liquido_lts, persona_encargada) VALUES
+(1, 1, 300.00, 'User A'), -- Contenedor 1 (EN USO), Liquido 1 (not CUARENTENA)
+(2, 2, 200.00, 'User B'), -- Contenedor 2 (EN USO), Liquido 2 (not CUARENTENA)
+(3, 3, 500.00, 'User C'), -- Contenedor 3 (EN USO), Liquido 3 (not CUARENTENA)
+(4, 4, 400.00, 'User D'), -- Contenedor 4 (EN USO), Liquido 4 (not CUARENTENA)
+(5, 5, 350.00, 'User E'); -- Contenedor 5 (EN USO), Liquido 5 (not CUARENTENA)
 
--- Create the ProductoTerminado table to store information about finished products
-
--- Drop the table if it already exists to avoid errors
-IF OBJECT_ID('dbo.ProductoTerminado', 'U') IS NOT NULL
-DROP TABLE dbo.ProductoTerminado;
+-- Drop the table if it exists
+IF OBJECT_ID('dbo.productos_terminados', 'U') IS NOT NULL
+DROP TABLE dbo.productos_terminados;
 GO
 
--- Create the table
-CREATE TABLE dbo.ProductoTerminado (
-    ID_ProductoTerminado INT NOT NULL IDENTITY(1,1), -- Unique identifier for each finished product
-    ID_Producto INT NOT NULL,                       -- Reference to the product in ContenedorLiquido
-    Fecha_termino DATE NOT NULL,                    -- Date when the product was finished
-    Numero_botellas INT NOT NULL,                   -- Number of bottles produced
-    PRIMARY KEY (ID_ProductoTerminado),             -- Set ID_ProductoTerminado as the primary key
-    FOREIGN KEY (ID_Producto) REFERENCES dbo.ContenedorLiquido(ID_Producto) -- Foreign key to ContenedorLiquido table
+-- Create the table with the correct structure and foreign keys
+CREATE TABLE productos_terminados (
+    id_producto_terminado INT NOT NULL IDENTITY(1,1) PRIMARY KEY, -- Unique identifier for the finished product
+    id_liquido_contenedor INT NOT NULL, -- Foreign key referencing contenedores_liquido
+    fecha_termino DATE NOT NULL DEFAULT GETDATE(), -- Date when the product was finished, default to current date
+    cantidad_liquido_terminada_lts DECIMAL(10, 2), -- Number of bottles produced
+    FOREIGN KEY (id_liquido_contenedor) REFERENCES trasacciones_liquido_contenedor(id_liquido_contendor)
 );
 
--- Insert data into the ProductoTerminado table
+----- REMEMBER ISERT DUMMY DATA INTO productos_teminados ------
 
-INSERT INTO ProductoTerminado (ID_Producto, Fecha_termino, Numero_botellas) VALUES
-(1, '2023-07-01', 100), -- Referencia a ID_Producto 1 en ContenedorLiquido
-(2, '2023-07-02', 200), -- Referencia a ID_Producto 2 en ContenedorLiquido
-(3, '2023-07-03', 150), -- Referencia a ID_Producto 3 en ContenedorLiquido
-(4, '2023-07-04', 300), -- Referencia a ID_Producto 4 en ContenedorLiquido
-(5, '2023-07-05', 400), -- Referencia a ID_Producto 5 en ContenedorLiquido
-(6, '2023-07-06', 250), -- Referencia a ID_Producto 6 en ContenedorLiquido
-(7, '2023-07-07', 100), -- Referencia a ID_Producto 7 en ContenedorLiquido
-(8, '2023-07-08', 350), -- Referencia a ID_Producto 8 en ContenedorLiquido
-(9, '2023-07-09', 200), -- Referencia a ID_Producto 9 en ContenedorLiquido
-(10, '2023-07-10', 500); -- Referencia a ID_Producto 10 en ContenedorLiquido
-
-
-------------------------------------------- PROCEDURES ----------------------------------------------------------
-
--- This stored procedure retrieves the history of liquids for a specific container. 
--- It returns details about the container, liquid, quantity inside, responsible person,
--- transfer date, and the status of the liquid.
-
--- Drop the stored procedure if it already exists
-IF OBJECT_ID('GetHistorialLiquidosContenedor', 'P') IS NOT NULL
-DROP PROCEDURE GetHistorialLiquidosContenedor;
+-- Drop the table if it exists
+IF OBJECT_ID('dbo.combinaciones', 'U') IS NOT NULL
+DROP TABLE dbo.combinaciones;
 GO
 
+-- Create the table with the correct structure and foreign keys
+CREATE TABLE combinaciones (
+    id_combinacion INT NOT NULL IDENTITY(1,1) PRIMARY KEY, -- Unique identifier for the combination
+    id_liquido_base INT NOT NULL, -- Foreign key referencing liquidos
+    FOREIGN KEY (id_liquido_base) REFERENCES liquidos(id_liquido)
+);
+
+-- Drop the table if it exists
+IF OBJECT_ID('dbo.combinaciones_detalle', 'U') IS NOT NULL
+DROP TABLE dbo.combinaciones_detalle;
 GO
-CREATE PROCEDURE GetHistorialLiquidosContenedor
-    @ID_Contenedor INT
+
+-- Create the table with the correct structure and foreign keys
+CREATE TABLE combinaciones_detalle (
+    id_combinacion INT NOT NULL, -- Foreign key referencing combinaciones
+    id_liquido INT NOT NULL, -- Foreign key referencing liquidos
+    cantidad_lts DECIMAL(10, 2) NOT NULL CHECK (cantidad_lts > 0), -- Amount of liquid in liters, must be greater than 0
+    FOREIGN KEY (id_combinacion) REFERENCES combinaciones(id_combinacion),
+    FOREIGN KEY (id_liquido) REFERENCES liquidos(id_liquido)
+);
+
+--- SOTORED PROCEDURES TO BE CONSUMED BY POWER APPS OR WHATEVER OTHER APP ---
+
+-- Drop the procedure if it exists
+IF OBJECT_ID('dbo.sp_obtener_datos_liquidos', 'P') IS NOT NULL
+DROP PROCEDURE dbo.sp_obtener_datos_liquidos;
+GO
+
+-- Create the stored procedure to get data from liquidos
+CREATE PROCEDURE sp_obtener_datos_liquidos
 AS
 BEGIN
+    SET NOCOUNT ON;
+
+    -- Select id_liquido and codigo from liquidos table
+    SELECT id_liquido, codigo, cantidad_total_lts
+    FROM liquidos;
+END;
+GO
+
+-- Call stored procedure
+EXEC sp_obtener_datos_liquidos;
+
+-- Drop the procedure if it exists
+IF OBJECT_ID('dbo.sp_obtener_datos_contenedor', 'P') IS NOT NULL
+DROP PROCEDURE dbo.sp_obtener_datos_contenedor;
+GO
+
+-- Create the stored procedure to get data from one container by it's unique id
+CREATE PROCEDURE sp_obtener_datos_contenedor
+    @id_contenedor INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Select nombre, id_tipo, id_estatus, fecha_baja and capacidad_lts from contenedores table
+    -- Join with tipos_contenedor to get the capacity
     SELECT 
-        cl.ID_Contenedor,
-        c.Nombre AS Nombre_Contenedor,
-        cl.ID_Liquido,
-        l.Codigo AS Codigo_Liquido,
-        cl.Cantidad_dentro,
-        cl.Persona_encargada,
-        cl.Fecha_transferencia,
-        el.Descripcion AS Estatus_Liquido
+        c.nombre,
+        c.id_estatus,
+        fecha_baja,
+        t.capacidad_lts -- Assuming capacidad_lts is the capacity column in tipos_contenedor
     FROM 
-        ContenedorLiquido cl
+        contenedores c
     JOIN 
-        Contenedores c ON cl.ID_Contenedor = c.ID_Contenedor
-    JOIN 
-        Liquidos l ON cl.ID_Liquido = l.ID_Liquido
-    JOIN 
-        EstatusLiquido el ON cl.Estatus_Liquido = el.ID_Estatus
+        tipos_contenedor t ON c.id_tipo = t.id_tipo_contenedor
     WHERE 
-        cl.ID_Contenedor = @ID_Contenedor;
+        c.id_contenedor = @id_contenedor;
 END;
 GO
 
--- Call the stored procedure GetHistorialLiquidosContenedor with a specific container ID
-EXEC GetHistorialLiquidosContenedor @ID_Contenedor = 1;
+-- Call stored procedure
+EXEC sp_obtener_datos_contenedor @id_contenedor = 4;
+SELECT * FROM contenedores;
 
--- Drop the stored procedure if it already exists
-IF OBJECT_ID('GetCapacidadDisponibleContenedor', 'P') IS NOT NULL
-DROP PROCEDURE GetCapacidadDisponibleContenedor;
+-- Drop the procedure if it exists
+IF OBJECT_ID('dbo.sp_obtener_estatus_liquidos', 'P') IS NOT NULL
+DROP PROCEDURE dbo.sp_obtener_estatus_liquidos;
 GO
 
--- Create the stored procedure to get the capacity and name of a specific container based on its ID
-CREATE PROCEDURE GetCapacidadDisponibleContenedor
-    @ID_Contenedor INT
+-- Create stored procedure to get the status of liquids
+CREATE PROCEDURE sp_obtener_estatus_liquidos
 AS
 BEGIN
-    SELECT 
-        tc.Nombre AS Nombre_Contenedor,
-        tc.Capacidad
-    FROM 
-        dbo.Contenedores c
-    JOIN 
-        dbo.TipoContenedor tc ON c.Tipo = tc.ID_Tipo
-    WHERE 
-        c.ID_Contenedor = @ID_Contenedor;
+    SET NOCOUNT ON;
+    -- Select descripcion from estatus_liquido table
+    SELECT descripcion
+    FROM estatus_liquido;
 END;
 GO
 
--- Call the stored procedure
-EXEC GetCapacidadDisponibleContenedor @ID_Contenedor = 2;
+-- Call the procedure to get estatus of liquids
+EXEC sp_obtener_estatus_liquidos;
 
--- Drop the stored procedure if it already exists
-IF OBJECT_ID('InsertarNuevoContenedorLiquido', 'P') IS NOT NULL
-DROP PROCEDURE InsertarNuevoContenedorLiquido;
-GO
-
--- Create the stored procedure to insert a new record into the ContenedorLiquido table
-CREATE PROCEDURE InsertarNuevoContenedorLiquido
-    @ID_Contenedor INT,
-    @ID_Liquido INT,
-    @Cantidad_dentro DECIMAL(10, 2),
-    @Persona_encargada VARCHAR(255),
-    @Fecha_transferencia DATETIME,
-    @Estatus_Liquido INT
-AS
-BEGIN
-    INSERT INTO dbo.ContenedorLiquido (ID_Contenedor, ID_Liquido, Cantidad_dentro, Persona_encargada, Fecha_transferencia, Estatus_Liquido)
-    VALUES (@ID_Contenedor, @ID_Liquido, @Cantidad_dentro, @Persona_encargada, @Fecha_transferencia, @Estatus_Liquido);
-END;
-GO
-
--- Call the stored procedure to insert a new record
-EXEC InsertarNuevoContenedorLiquido 
-    @ID_Contenedor = 1,
-    @ID_Liquido = 2,
-    @Cantidad_dentro = 100.00,
-    @Persona_encargada = 'Usuario1',
-    @Fecha_transferencia = '2023-06-15 10:00:00.000',
-    @Estatus_Liquido = 1;
-GO
-
--- Drop the stored procedure if it already exists
-IF OBJECT_ID('InsertarNuevoLiquido', 'P') IS NOT NULL
-DROP PROCEDURE InsertarNuevoLiquido;
-GO
-
--- Create the stored procedure to insert a new record into the Liquidos table
-CREATE PROCEDURE InsertarNuevoLiquido
-    @Codigo VARCHAR(255),
-    @Tipo_Liquido VARCHAR(255),
-    @ID_Liquido_A INT,
-    @ID_Liquido_B INT,
-    @Cantidad_total DECIMAL(10, 2),
-    @Fecha_creacion DATETIME,
-    @Provedor INT,
-    @Metanol DECIMAL(10, 2),
-    @Alcoholes_superiores DECIMAL(10, 2),
-    @Porcentaje_Alcohol_vol DECIMAL(10, 2),
-    @Orden_produccion INT
-AS
-BEGIN
-    INSERT INTO dbo.Liquidos 
-    (
-        Codigo,
-        Tipo_Liquido,
-        ID_Liquido_A,
-        ID_Liquido_B,
-        Cantidad_total,
-        Fecha_creacion,
-        Provedor,
-        Metanol,
-        Alcoholes_superiores,
-        [%_Alcohol_vol],
-        Orden_produccion
-    )
-    VALUES 
-    (
-        @Codigo,
-        @Tipo_Liquido,
-        @ID_Liquido_A,
-        @ID_Liquido_B,
-        @Cantidad_total,
-        @Fecha_creacion,
-        @Provedor,
-        @Metanol,
-        @Alcoholes_superiores,
-        @Porcentaje_Alcohol_vol,
-        @Orden_produccion
-    );
-END;
-GO
-
--- Call the stored procedure to insert a new record
-EXEC InsertarNuevoLiquido 
-    @Codigo = 'NuevoCodigo',
-    @Tipo_Liquido = 'Alpha',
-    @ID_Liquido_A = 1,
-    @ID_Liquido_B = 1,
-    @Cantidad_total = 100.00,
-    @Fecha_creacion = '2024-07-30 13:16:58.970',
-    @Provedor = 1,
-    @Metanol = 0.10,
-    @Alcoholes_superiores = 1.20,
-    @Porcentaje_Alcohol_vol = 40.00,
-    @Orden_produccion = 17;
-GO
-
----------------------------------- TEST CASES --------------------------------------------
--- This code will be removed in the future, so be carefully.
-
--- Eliminar el procedimiento almacenado si ya existe
-IF OBJECT_ID('ObtenerLiquidosBase', 'P') IS NOT NULL
-DROP PROCEDURE ObtenerLiquidosBase;
-GO
-
-USE master;
-GO
-
--- Establecer la base de datos en modo de un solo usuario para desconectar conexiones activas
-ALTER DATABASE [casalumbre_db] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-
--- Eliminar la base de datos
-DROP DATABASE [casalumbre_db];
+SELECT * FROM liquidos;
+SELECT * FROM proveedores;

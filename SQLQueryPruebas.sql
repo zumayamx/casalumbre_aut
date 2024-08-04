@@ -172,3 +172,6 @@ END
 GO
 
 EXEC ObtenerTrazabilidadLiquido @ID_Liquido = 10;
+
+USE casalumbre_pruebas;
+SELECT * FROM Liquidos;
