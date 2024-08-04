@@ -209,12 +209,12 @@ INSERT INTO liquidos (codigo, id_tipo, cantidad_total_lts, fecha_produccion, id_
 ('MEZCAL A', 1, 750.00, GETDATE(), 5, 1.50, 0.25, 40.00, 1010, 2); -- 2 - APROBADO 1
 
 -- Drop the table if it exists
-IF OBJECT_ID('dbo.contenedores_liquido', 'U') IS NOT NULL
-DROP TABLE dbo.contenedores_liquido;
+IF OBJECT_ID('dbo.transacciones_liquido_contenedor', 'U') IS NOT NULL
+DROP TABLE dbo.transacciones_liquido_contenedor;
 GO
 
 -- Create the table with the correct structure and foreign keys
-CREATE TABLE trasacciones_liquido_contenedor (
+CREATE TABLE transacciones_liquido_contenedor (
     id_liquido_contendor INT NOT NULL IDENTITY(1,1) PRIMARY KEY, -- Unique identifier for the container-liquid relation
     id_contenedor INT NOT NULL, -- Foreign key referencing contenedores
     id_liquido INT NOT NULL, -- Foreign key referencing liquidos
@@ -227,7 +227,7 @@ CREATE TABLE trasacciones_liquido_contenedor (
 -- Insert 5 container-liquid relations into the contenedores_liquido table
 
 -- Ensure the containers are "EN USO" and the liquids are not "CUARENTENA"
-INSERT INTO trasacciones_liquido_contenedor (id_contenedor, id_liquido, cantidad_liquido_lts, persona_encargada) VALUES
+INSERT INTO transacciones_liquido_contenedor (id_contenedor, id_liquido, cantidad_liquido_lts, persona_encargada) VALUES
 (1, 1, 300.00, 'User A'), -- Contenedor 1 (EN USO), Liquido 1 (not CUARENTENA)
 (2, 2, 200.00, 'User B'), -- Contenedor 2 (EN USO), Liquido 2 (not CUARENTENA)
 (3, 3, 500.00, 'User C'), -- Contenedor 3 (EN USO), Liquido 3 (not CUARENTENA)
@@ -245,7 +245,7 @@ CREATE TABLE productos_terminados (
     id_liquido_contenedor INT NOT NULL, -- Foreign key referencing contenedores_liquido
     fecha_termino DATE NOT NULL DEFAULT GETDATE(), -- Date when the product was finished, default to current date
     cantidad_liquido_terminada_lts DECIMAL(10, 2), -- Number of bottles produced
-    FOREIGN KEY (id_liquido_contenedor) REFERENCES trasacciones_liquido_contenedor(id_liquido_contendor)
+    FOREIGN KEY (id_liquido_contenedor) REFERENCES transacciones_liquido_contenedor(id_liquido_contendor)
 );
 
 ----- REMEMBER ISERT DUMMY DATA INTO productos_teminados ------
@@ -303,32 +303,31 @@ IF OBJECT_ID('dbo.sp_obtener_datos_contenedor', 'P') IS NOT NULL
 DROP PROCEDURE dbo.sp_obtener_datos_contenedor;
 GO
 
--- Create the stored procedure to get data from one container by it's unique id
+-- Create the stored procedure to get the data from one container
 CREATE PROCEDURE sp_obtener_datos_contenedor
     @id_contenedor INT
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    -- Select nombre, id_tipo, id_estatus, fecha_baja and capacidad_lts from contenedores table
+    -- Select nombre and capacidad_lts from contenedores table
     -- Join with tipos_contenedor to get the capacity
     SELECT 
         c.nombre,
-        c.id_estatus,
-        fecha_baja,
         t.capacidad_lts -- Assuming capacidad_lts is the capacity column in tipos_contenedor
     FROM 
         contenedores c
     JOIN 
         tipos_contenedor t ON c.id_tipo = t.id_tipo_contenedor
     WHERE 
-        c.id_contenedor = @id_contenedor;
+        c.id_contenedor = @id_contenedor
+        AND c.fecha_baja IS NULL
+        AND c.id_estatus = 2;
 END;
 GO
 
 -- Call stored procedure
-EXEC sp_obtener_datos_contenedor @id_contenedor = 4;
-SELECT * FROM contenedores;
+EXEC sp_obtener_datos_contenedor @id_contenedor = 11;
 
 -- Drop the procedure if it exists
 IF OBJECT_ID('dbo.sp_obtener_estatus_liquidos', 'P') IS NOT NULL
@@ -341,13 +340,200 @@ AS
 BEGIN
     SET NOCOUNT ON;
     -- Select descripcion from estatus_liquido table
-    SELECT descripcion
-    FROM estatus_liquido;
+    SELECT * FROM estatus_liquido;
 END;
 GO
 
 -- Call the procedure to get estatus of liquids
 EXEC sp_obtener_estatus_liquidos;
 
+-- Drop the procedure if it exists
+IF OBJECT_ID('dbo.sp_insertar_transaccion_liquido_contenedor', 'P') IS NOT NULL
+DROP PROCEDURE dbo.sp_insertar_transaccion_liquido_contenedor;
+GO
+
+-- Create stored procedure to insert a transaction in liquido_contenedor table
+CREATE PROCEDURE sp_insertar_transaccion_liquido_contenedor
+    @id_contenedor INT,
+    @id_liquido INT,
+    @cantidad_liquido_lts DECIMAL(10, 2),
+    @persona_encargada VARCHAR(32)
+AS
+BEGIN
+    -- Insert into transacciones_liquido_contenedor
+    INSERT INTO transacciones_liquido_contenedor
+    (
+        id_contenedor,
+        id_liquido,
+        cantidad_liquido_lts,
+        persona_encargada
+    )
+    VALUES 
+    (
+        @id_contenedor,
+        @id_liquido,
+        @cantidad_liquido_lts,
+        @persona_encargada
+    );
+END;
+GO
+
+-- Call the stored procedure to insert a trasaction liquido to container
+EXEC sp_insertar_transaccion_liquido_contenedor 
+    @id_contenedor = 10, 
+    @id_liquido = 2, 
+    @cantidad_liquido_lts = 50.75, 
+    @persona_encargada = 'manolo@gmail.com';
+
+
+-- Drop the procedure if it exists
+IF OBJECT_ID('dbo.sp_insertar_liquido', 'P') IS NOT NULL
+DROP PROCEDURE dbo.sp_insertar_liquido;
+GO
+
+-- Create procedure to insert a new liquid in liquidos table
+CREATE PROCEDURE sp_insertar_liquido
+    @codigo VARCHAR(32),
+    @id_tipo INT,
+    @cantidad_total_lts DECIMAL(10, 2),
+    @id_proveedor INT,
+    @metanol DECIMAL (5,2),
+    @alcoholes_sup DECIMAL(5, 2),
+    @porcentaje_alcohol_vol DECIMAL(5, 2),
+    @orden_produccion INT,
+    @id_estatus INT
+AS
+BEGIN
+    -- Insert new liquid in liquidos table
+    INSERT INTO liquidos
+    (
+        codigo,
+        id_tipo,
+        cantidad_total_lts,
+        id_proveedor,
+        metanol,
+        alcoholes_sup,
+        porcentaje_alchol_vol,
+        orden_produccion,
+        id_estatus
+    )
+    VALUES
+    (
+        @codigo,
+        @id_tipo,
+        @cantidad_total_lts,
+        @id_proveedor,
+        @metanol,
+        @alcoholes_sup,
+        @porcentaje_alcohol_vol,
+        @orden_produccion,
+        @id_estatus
+        
+    )
+END;
+GO
+
+-- Call the stored procedure to insert a new liquid
+EXEC sp_insertar_liquido
+    @codigo = 'LIQUIDO A',
+    @id_tipo = 1,
+    @cantidad_total_lts = 300.00,
+    @id_proveedor = 5,
+    @metanol = 1.35,
+    @alcoholes_sup = 0.24,
+    @porcentaje_alcohol_vol = 45.85,
+    @orden_produccion = 1010,
+    @id_estatus = 2;
+
+-- Drop the procedure if it exists
+IF OBJECT_ID('dbo.sp_obtener_proveedores', 'P') IS NOT NULL
+DROP PROCEDURE dbo.sp_obtener_proveedores;
+GO
+
+CREATE PROCEDURE sp_obtener_proveedores
+AS
+BEGIN
+    SET NOCOUNT ON;
+    -- Select all from proveedores (id_provedor, nombre)
+    SELECT * FROM proveedores;
+END;
+GO
+
+-- Call stored procedure to get proveedores
+EXEC sp_obtener_proveedores;
+
+-- Drop the procedure if it exists
+IF OBJECT_ID('dbo.sp_obtener_datos_liquido_contenedor', 'P') IS NOT NULL
+DROP PROCEDURE dbo.obtener_datos_liquido_contenedor;
+GO
+
+-- Create procedure to get liquid into a container, VALIDATE QUANTITY OF LIQUID OR ESTATUS
+CREATE PROCEDURE sp_obtener_datos_liquido_contenedor
+    @id_contenedor INT
+AS
+BEGIN
+    -- Select the unique ID of the liquid in this container
+    SELECT id_liquido 
+    FROM transacciones_liquido_contenedor
+    WHERE
+        id_contenedor = @id_contenedor;
+END;
+GO
+
+-- Drop the procedure if it exists
+IF OBJECT_ID('dbo.sp_obtener_id_combinacion_liquido', 'P') IS NOT NULL
+DROP PROCEDURE dbo.sp_obtener_id_combinacion_liquido;
+GO
+
+CREATE PROCEDURE sp_obtener_id_combinacion_liquido
+    @id_liquido_base INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    INSERT INTO combinaciones
+    (
+        id_liquido_base
+    )
+    VALUES
+    (
+        @id_liquido_base
+    );
+
+    -- Select the id_combinacion most recently to id_liquido_base specified
+    SELECT TOP 1 id_combinacion
+    FROM combinaciones
+    WHERE id_liquido_base = @id_liquido_base
+    ORDER BY id_combinacion DESC;
+END;
+GO
+
+-- Call stored procedure  to get the unique id of combination
+EXEC sp_obtener_id_combinacion_liquido
+    @id_liquido_base = 1;
+
+-- Drop the procedure if it exists
+IF OBJECT_ID('dbo.sp_insertar_combinacion_liquido', 'P') IS NOT NULL
+DROP PROCEDURE dbo.sp_insertar_combinacion_liquido;
+GO
+
+-- Create procedure to insert a combination of liquid in combinacion_detalle
+CREATE PROCEDURE sp_insertar_combinacion_liquido
+    @id_liquido_base INT,
+    @id_liquido INT,
+    @cantidad_lts DECIMAL(10, 2)
+AS
+BEGIN
+    INSERT INTO
+END;
+GO
+
+
+
+
 SELECT * FROM liquidos;
 SELECT * FROM proveedores;
+SELECT * FROM contenedores;
+SELECT * FROM transacciones_liquido_contenedor;
+SELECT * FROM combinaciones;
+SELECT * FROM combinaciones_detalle;
