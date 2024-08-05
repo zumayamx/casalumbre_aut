@@ -464,21 +464,157 @@ EXEC sp_obtener_proveedores;
 
 -- Drop the procedure if it exists
 IF OBJECT_ID('dbo.sp_obtener_datos_liquido_contenedor', 'P') IS NOT NULL
-DROP PROCEDURE dbo.obtener_datos_liquido_contenedor;
+DROP PROCEDURE dbo.sp_obtener_datos_liquido_contenedor;
 GO
 
--- Create procedure to get liquid into a container, VALIDATE QUANTITY OF LIQUID OR ESTATUS
 CREATE PROCEDURE sp_obtener_datos_liquido_contenedor
     @id_contenedor INT
 AS
 BEGIN
-    -- Select the unique ID of the liquid in this container
-    SELECT id_liquido 
-    FROM transacciones_liquido_contenedor
+    SET NOCOUNT ON;
+
+    -- Variables para almacenar los datos del último líquido en el contenedor
+    DECLARE @ultimo_id_liquido INT;
+    DECLARE @ultimo_id_liquido_contendor INT;
+    DECLARE @cantidad_liquido_lts DECIMAL(10, 2);
+
+    -- Obtener el último registro del líquido en el contenedor
+    SELECT TOP 1
+        @ultimo_id_liquido = t.id_liquido,
+        @ultimo_id_liquido_contendor = t.id_liquido_contendor,
+        @cantidad_liquido_lts = t.cantidad_liquido_lts
+    FROM 
+        transacciones_liquido_contenedor t
     WHERE
-        id_contenedor = @id_contenedor;
+        t.id_contenedor = @id_contenedor
+    ORDER BY t.id_liquido_contendor DESC;
+
+    -- Aplicar las validaciones
+    IF EXISTS (
+        SELECT 1
+        FROM liquidos l
+        WHERE l.id_liquido = @ultimo_id_liquido
+          AND l.id_estatus > 1
+          AND @cantidad_liquido_lts > 0.00
+    )
+    BEGIN
+        SELECT 
+            @ultimo_id_liquido AS id_liquido,
+            @ultimo_id_liquido_contendor AS id_liquido_contendor,
+            @cantidad_liquido_lts AS cantidad_liquido_lts;
+    END
+    ELSE
+    BEGIN
+        -- Si no se cumplen las condiciones, no devolver nada o puedes devolver un mensaje de error
+        RAISERROR ('No se encontró un líquido válido en el contenedor.', 16, 1);
+    END
 END;
 GO
+
+-- Call the stored procedure to obtain unique id of liquid
+EXEC sp_obtener_datos_liquido_contenedor
+    @id_contenedor = 4;
+
+-- Drop the procedure if it exists, SE GARANTIZA QUE EL LIQUIDO TENGA CANTIDAD > 0 Y ESTATUS NO CUARENTENA
+IF OBJECT_ID('dbo.obtener_id_liquido_combinado', 'P') IS NOT NULL
+DROP PROCEDURE dbo.obtener_id_liquido_combinado;
+GO
+
+CREATE PROCEDURE obtener_id_liquido_combinado
+    @nombre VARCHAR(32),
+    @id_tipo INT,
+    @cantidad_lts DECIMAL(10, 2),
+    @id_proveedor INT,
+    @metanol DECIMAL(10, 2),
+    @alcoholes_sup DECIMAL(10, 2),
+    @porcentaje_alcohol_vol DECIMAL(10, 2),
+    @orden_produccion INT,
+    @id_estatus INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @id_liquido_combinado INT;
+
+    -- Insertar el nuevo registro en la tabla liquidos
+    INSERT INTO liquidos
+    (
+        codigo,
+        id_tipo,
+        cantidad_total_lts,
+        fecha_produccion,
+        id_proveedor,
+        metanol,
+        alcoholes_sup,
+        porcentaje_alchol_vol,
+        orden_produccion,
+        id_estatus
+    )
+    VALUES
+    (
+        @nombre,
+        @id_tipo,
+        @cantidad_lts,
+        GETDATE(), -- Asumiendo que quieres la fecha actual para fecha_produccion
+        @id_proveedor,
+        @metanol,
+        @alcoholes_sup,
+        @porcentaje_alcohol_vol,
+        @orden_produccion,
+        @id_estatus
+    );
+
+    -- Obtener el id_liquido del registro recién insertado
+    SET @id_liquido_combinado = SCOPE_IDENTITY();
+    DECLARE @id_combinacion INT;
+
+    -- Verificar las condiciones en la tabla liquidos,  DOBLE VALIDACION ?
+    IF EXISTS (
+        SELECT 1
+        FROM liquidos
+        WHERE id_liquido = @id_liquido_combinado
+          AND cantidad_total_lts > 0.00
+          AND id_estatus > 1
+    )
+    BEGIN
+        -- Insertar en la tabla combinaciones
+        INSERT INTO combinaciones
+        (
+            id_liquido_base
+        )
+        VALUES
+        (
+            @id_liquido_combinado
+        );
+
+        -- Seleccionar el id_combinacion más reciente para el id_liquido_base especificado, SUPONIENDO QUE LAS COMBINACIONES SON INHERENTES Y DIFERENTES
+        -- SELECT TOP 1 id_combinacion
+        -- FROM combinaciones
+        -- WHERE id_liquido_base = @id_liquido_combinado
+        -- ORDER BY id_combinacion DESC;
+        SET @id_combinacion = SCOPE_IDENTITY();
+    END
+    ELSE
+    BEGIN
+        -- Devolver un mensaje de error si las condiciones no se cumplen
+        RAISERROR ('El líquido especificado no tiene cantidad_total_lts > 0.00 o id_estatus <= 1.', 16, 1);
+    END
+
+    -- Devolver el id_liquido
+    -- SELECT @id_liquido AS id_liquido;
+END;
+GO
+
+-- EXEC obtener_id_liquido_combinado
+--     @nombre = 'LIQUIDO COMBINADO X',
+--     @id_tipo = 2,
+--     @cantidad_lts = 100.0,
+--     @id_proveedor = 3,
+--     @metanol = 5.0,
+--     @alcoholes_sup = 0.5,
+--     @porcentaje_alcohol_vol = 40.0,
+--     @orden_produccion = 1033,
+--     @id_estatus = 2;
 
 -- Drop the procedure if it exists
 IF OBJECT_ID('dbo.sp_obtener_id_combinacion_liquido', 'P') IS NOT NULL
@@ -486,49 +622,52 @@ DROP PROCEDURE dbo.sp_obtener_id_combinacion_liquido;
 GO
 
 CREATE PROCEDURE sp_obtener_id_combinacion_liquido
-    @id_liquido_base INT
+    @id_liquido_combinado INT
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    INSERT INTO combinaciones
-    (
-        id_liquido_base
+    -- Verificar las condiciones en la tabla liquidos
+    IF EXISTS (
+        SELECT 1
+        FROM liquidos
+        WHERE id_liquido = @id_liquido_combinado
+          AND cantidad_total_lts > 0.00
+          AND id_estatus > 1
     )
-    VALUES
-    (
-        @id_liquido_base
-    );
+    BEGIN
+        -- Insertar en la tabla combinaciones
+        INSERT INTO combinaciones
+        (
+            id_liquido_base
+        )
+        VALUES
+        (
+            @id_liquido_combinado
+        );
 
-    -- Select the id_combinacion most recently to id_liquido_base specified
-    SELECT TOP 1 id_combinacion
-    FROM combinaciones
-    WHERE id_liquido_base = @id_liquido_base
-    ORDER BY id_combinacion DESC;
+        -- Seleccionar el id_combinacion más reciente para el id_liquido_base especificado
+        SELECT TOP 1 id_combinacion
+        FROM combinaciones
+        WHERE id_liquido_base = @id_liquido_combinado
+        ORDER BY id_combinacion DESC;
+    END
+    ELSE
+    BEGIN
+        -- Devolver un mensaje de error si las condiciones no se cumplen
+        RAISERROR ('El líquido especificado no tiene cantidad_total_lts > 0.00 o id_estatus <= 1.', 16, 1);
+    END
 END;
 GO
 
 -- Call stored procedure  to get the unique id of combination
 EXEC sp_obtener_id_combinacion_liquido
-    @id_liquido_base = 1;
-
--- Drop the procedure if it exists
-IF OBJECT_ID('dbo.sp_insertar_combinacion_liquido', 'P') IS NOT NULL
-DROP PROCEDURE dbo.sp_insertar_combinacion_liquido;
-GO
-
--- Create procedure to insert a combination of liquid in combinacion_detalle
-CREATE PROCEDURE sp_insertar_combinacion_liquido
-    @id_liquido_base INT,
-    @id_liquido INT,
-    @cantidad_lts DECIMAL(10, 2)
-AS
-BEGIN
-    INSERT INTO
-END;
-GO
+    @id_liquido_combinado = 1;
 
 
+
+INSERT INTO transacciones_liquido_contenedor (id_contenedor, id_liquido, cantidad_liquido_lts, persona_encargada) VALUES
+(4, 12, 45.00, 'manolo@gmail.com');
 
 
 SELECT * FROM liquidos;
@@ -537,3 +676,6 @@ SELECT * FROM contenedores;
 SELECT * FROM transacciones_liquido_contenedor;
 SELECT * FROM combinaciones;
 SELECT * FROM combinaciones_detalle;
+SELECT * FROM estatus_contenedor;
+SELECT * FROM estatus_liquido;
+
