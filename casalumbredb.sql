@@ -463,11 +463,12 @@ GO
 EXEC sp_obtener_proveedores;
 
 -- Drop the procedure if it exists
-IF OBJECT_ID('dbo.sp_obtener_datos_liquido_contenedor', 'P') IS NOT NULL
-DROP PROCEDURE dbo.sp_obtener_datos_liquido_contenedor;
+IF OBJECT_ID('dbo.sp_obtener_datos_validos_liquido_contenedor', 'P') IS NOT NULL
+DROP PROCEDURE dbo.sp_obtener_datos_validos_liquido_contenedor;
 GO
 
-CREATE PROCEDURE sp_obtener_datos_liquido_contenedor
+-- Create procedure to validate a liquid in a container
+CREATE PROCEDURE sp_obtener_datos_validos_liquido_contenedor
     @id_contenedor INT
 AS
 BEGIN
@@ -512,7 +513,7 @@ END;
 GO
 
 -- Call the stored procedure to obtain unique id of liquid
-EXEC sp_obtener_datos_liquido_contenedor
+EXEC sp_obtener_datos_validos_liquido_contenedor
     @id_contenedor = 3;
 
 -- Drop the procedure if it exists
