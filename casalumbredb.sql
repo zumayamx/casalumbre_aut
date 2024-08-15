@@ -98,24 +98,24 @@ CREATE TABLE contenedores (
 
 -- 5 containers that have been decommissioned (fecha_baja not null)
 INSERT INTO contenedores (nombre, id_tipo, id_ubicacion, fecha_alta, fecha_baja, id_estatus) VALUES
-('TANQUE A', 1, 1, '2021-01-01', '2022-01-01', 4), -- 4 - DAÑADO
-('TANQUE B', 2, 2, '2021-02-01', '2022-02-01', 4), -- 4 - DAÑADO
-('TANQUE C', 3, 3, '2021-03-01', '2022-03-01', 4), -- 4 - DAÑADO
-('TANQUE D', 4, 4, '2021-04-01', '2022-04-01', 4), -- 4 - DAÑADO
-('TANQUE E', 5, 5, '2021-05-01', '2022-05-01', 4); -- 4 - DAÑADO
+('TANQUE A', 1, 1, '2021-01-01', '2022-01-01', 4), -- 4 - DAÑADO?
+('TANQUE B', 2, 2, '2021-02-01', '2022-02-01', 4), -- 4 - DAÑADO?
+('TANQUE C', 3, 3, '2021-03-01', '2022-03-01', 4), -- 4 - DAÑADO?
+('TANQUE D', 4, 4, '2021-04-01', '2022-04-01', 4), -- 4 - DAÑADO?
+('TANQUE E', 5, 5, '2021-05-01', '2022-05-01', 4); -- 4 - DAÑADO?
 
 -- 10 active containers (fecha_baja is null)
 INSERT INTO contenedores (nombre, id_tipo, id_ubicacion, fecha_alta, id_estatus) VALUES
-('TANQUE F', 1, 1, '2022-06-01', 1), -- 1 - EN USO
-('TANQUE G', 2, 2, '2022-07-01', 1), -- 1 - EN USO
-('TANQUE H', 3, 3, '2022-08-01', 1), -- 1 - EN USO
-('TANQUE I', 4, 4, '2022-09-01', 1), -- 1 - EN USO
-('TANQUE J', 5, 5, '2022-10-01', 1), -- 1 - EN USO
-('TANQUE K', 1, 1, '2022-11-01', 1), -- 1 - EN USO
-('TANQUE L', 2, 2, '2022-12-01', 1), -- 1 - EN USO
-('TANQUE M', 3, 3, '2023-01-01', 1), -- 1 - EN USO
-('TANQUE N', 4, 4, '2023-02-01', 1), -- 1 - EN USO
-('TANQUE O', 5, 5, '2023-03-01', 1); -- 1 - EN USO
+('TANQUE F', 1, 1, '2022-06-01', 2), -- 2 - DISPONIBLE
+('TANQUE G', 2, 2, '2022-07-01', 2), -- 2 - DISPONIBLE
+('TANQUE H', 3, 3, '2022-08-01', 2), -- 2 - DISPONIBLE
+('TANQUE I', 4, 4, '2022-09-01', 2), -- 2 - DISPONIBLE
+('TANQUE J', 5, 5, '2022-10-01', 2), -- 2 - DISPONIBLE
+('TANQUE K', 1, 1, '2022-11-01', 2), -- 2 - DISPONIBLE
+('TANQUE L', 2, 2, '2022-12-01', 2), -- 2 - DISPONIBLE
+('TANQUE M', 3, 3, '2023-01-01', 2), -- 2 - DISPONIBLE
+('TANQUE N', 4, 4, '2023-02-01', 2), -- 2 - DISPONIBLE
+('TANQUE O', 5, 5, '2023-03-01', 2); -- 4 - DISPONIBLE
 
 -- Drop the table if it exists
 IF OBJECT_ID('dbo.estatus_liquido', 'U') IS NOT NULL
@@ -219,6 +219,7 @@ CREATE TABLE transacciones_liquido_contenedor (
     cantidad_liquido_lts DECIMAL(10, 2) NOT NULL, -- Amount of liquid in the container in liters
     persona_encargada VARCHAR(32) NOT NULL, -- Person responsible for the operation
     id_estatus INT NOT NULL, -- Foreign key referencing estatus_liquido
+    fecha_transaccion DATE DEFAULT GETDATE(), -- Date of trasaction to get an historial
     FOREIGN KEY (id_contenedor) REFERENCES contenedores(id_contenedor),
     FOREIGN KEY (id_liquido) REFERENCES liquidos(id_liquido),
     FOREIGN KEY (id_estatus) REFERENCES estatus_liquido(id_estatus_liquido)
@@ -258,8 +259,8 @@ GO
 -- Create the table with the correct structure and foreign keys
 CREATE TABLE combinaciones (
     id_combinacion INT NOT NULL IDENTITY(1,1) PRIMARY KEY, -- Unique identifier for the combination
-    id_liquido_base INT NOT NULL, -- Foreign key referencing liquidos
-    FOREIGN KEY (id_liquido_base) REFERENCES liquidos(id_liquido)
+    id_liquido_combinado INT NOT NULL, -- Foreign key referencing liquidos
+    FOREIGN KEY (id_liquido_combinado) REFERENCES liquidos(id_liquido)
 );
 
 -- Drop the table if it exists
@@ -318,7 +319,7 @@ BEGIN
         FROM contenedores 
         WHERE id_contenedor = @id_contenedor
           AND fecha_baja IS NULL
-          AND id_estatus = 2
+          AND id_estatus < 3
     )
     BEGIN
         RAISERROR('El contenedor con ID %d no existe o no está activo.', 16, 1, @id_contenedor);
@@ -329,6 +330,7 @@ BEGIN
     -- Join with tipos_contenedor to get the capacity
     SELECT 
         c.nombre,
+        c.id_estatus,
         t.capacidad_lts -- Assuming capacidad_lts is the capacity column in tipos_contenedor
     FROM 
         contenedores c
@@ -337,12 +339,12 @@ BEGIN
     WHERE 
         c.id_contenedor = @id_contenedor
         AND c.fecha_baja IS NULL
-        AND c.id_estatus = 2;
+        AND c.id_estatus < 3;
 END;
 GO
 
 -- Call stored procedure
-EXEC sp_obtener_datos_contenedor @id_contenedor = 11;   
+EXEC sp_obtener_datos_contenedor @id_contenedor = 6;   
 
 -- Drop the procedure if it exists
 IF OBJECT_ID('dbo.sp_obtener_estatus_liquidos', 'P') IS NOT NULL
@@ -369,7 +371,7 @@ GO
 
 -- Create stored procedure to insert a transaction in liquido_contenedor table
 CREATE PROCEDURE sp_insertar_transaccion_liquido_contenedor
-    @id_contenedor INT,
+    @id_contenedor_destino INT,
     @id_liquido INT,
     @cantidad_liquido_lts DECIMAL(10, 2),
     @persona_encargada VARCHAR(32),
@@ -387,20 +389,35 @@ BEGIN
     )
     VALUES 
     (
-        @id_contenedor,
+        @id_contenedor_destino,
         @id_liquido,
         @cantidad_liquido_lts,
         @persona_encargada,
         @id_estatus_liquido
     );
+
+     -- Check if the container exists before attempting the update
+    IF EXISTS (SELECT 1 FROM contenedores WHERE id_contenedor = @id_contenedor_destino)
+    BEGIN
+        UPDATE
+            contenedores
+        SET
+            id_estatus = 1
+        WHERE
+            id_contenedor = @id_contenedor_destino;
+    END
+    ELSE
+    BEGIN
+        RAISERROR('El contenedor especificado no existe.', 16, 1);
+    END;
 END;
 GO
 
--- Call the stored procedure to insert a trasaction liquido to container, DON'T USE THIS -----
+-- Call the stored procedure to insert a trasaction liquido to container, USE ONLY FOR ONE TRASACTION - IN TEST STATUS
 EXEC sp_insertar_transaccion_liquido_contenedor 
-    @id_contenedor = 14, 
-    @id_liquido = 5, 
-    @cantidad_liquido_lts = 100.00, 
+    @id_contenedor_destino = 6, 
+    @id_liquido = 1, 
+    @cantidad_liquido_lts = 300.00, 
     @persona_encargada = 'manolo@gmail.com',
     @id_estatus_liquido = 2;
 
@@ -505,7 +522,7 @@ BEGIN
     WHERE
         t.id_contenedor = @id_contenedor
         AND t.id_estatus > 1
-        AND c.id_estatus = 2
+        AND c.id_estatus < 3
         AND c.fecha_baja IS NULL
     ORDER BY t.id_liquido_contendor DESC;
 
@@ -518,18 +535,41 @@ BEGIN
 
     SELECT
         @ultimo_id_liquido AS id_liquido,
-        @cantidad_liquido_lts AS cantidad_liquido_lts,
+        l.codigo AS codigo_liquido,
+        @cantidad_liquido_lts AS cantidad_liquido_dentro_lts,
         @ultimo_id_liquido_contendor AS ultimo_id_liquido_contenedor
+    FROM 
+        liquidos l
+    WHERE 
+        l.id_liquido = @ultimo_id_liquido
 END;
 GO
 
 -- Call the stored procedure to obtain unique id of liquid
 EXEC sp_obtener_datos_validos_liquido_contenedor
-    @id_contenedor = 14;
+    @id_contenedor = 6;
 
-SELECT * FROM liquidos;
-SELECT * FROM contenedores;
-SELECT * FROM transacciones_liquido_contenedor;
+-- Drop procedure if exists
+IF OBJECT_ID('dbo.sp_obtener_datos_liquido', 'P') IS NOT NULL
+DROP PROCEDURE dbo.sp_obtener_datos_liquido;
+GO
+
+-- Create procedure to get the info of one liquid - FILL WITH ALL FIELD YOU NEED
+CREATE PROCEDURE sp_obtener_datos_liquido
+    @id_liquido INT
+AS
+BEGIN
+    SELECT
+        codigo AS codigo_liquido
+    FROM
+        liquidos l
+    WHERE
+        l.id_liquido = @id_liquido
+END;
+GO
+
+-- Call the stored procedure
+EXEC sp_obtener_datos_liquido @id_liquido = 5;
 
 -- Drop the procedure if it exists
 IF OBJECT_ID('dbo.sp_insertar_liquido_combinado', 'P') IS NOT NULL
@@ -587,7 +627,7 @@ BEGIN
     -- Insert in combinaciones table
     INSERT INTO combinaciones
     (
-        id_liquido_base
+        id_liquido_combinado
     )
     VALUES
     (
@@ -647,6 +687,8 @@ BEGIN
         @persona_encargada,
         @id_estatus
     );
+END;
+GO
 
     -- -- Finally update or set the quantity of liquid in 
     -- UPDATE
@@ -658,63 +700,154 @@ BEGIN
     -- WHERE
     --     t.id_contenedor = @id_contenedor_destino
     --     AND t.id_liquido = @id_liquido_combinado
-END;
-GO
 
 EXEC sp_insertar_liquido_combinado
-    @nombre = 'LIQUIDO COMBINADO 2-1',
+    @nombre = 'LIQUIDO COMBINADO 10->11',
     @id_tipo = 2,
-    @cantidad_generada_lts = 100.00,
+    @cantidad_generada_lts = 75.00,
     @id_proveedor = 3,
     @metanol = 10.15,
     @alcoholes_sup = 0.1,
     @porcentaje_alcohol_vol = 40.60,
-    @orden_produccion = 1090,
+    @orden_produccion = 1093,
     @id_estatus = 2,
-    @id_contenedor_destino = 1,
+    @id_contenedor_destino = 11,
     @persona_encargada = 'manolo@gmail.com',
     @composicion_liquidos_json = 
         N'[
         {
-            "id_contenedor_componente": 1, 
-            "id_liquido_componente": 1, 
-            "cantidad_liquido_componente_lts": 50.00
+            "id_contenedor_componente": 11, 
+            "id_liquido_componente": 6, 
+            "cantidad_liquido_componente_lts": 25.00
         }, 
         {
-            "id_contenedor_componente": 2, 
-            "id_liquido_componente": 2, 
+            "id_contenedor_componente": 10, 
+            "id_liquido_componente": 13, 
             "cantidad_liquido_componente_lts": 50.00
         }
         ]';
 
-EXEC sp_insertar_liquido_combinado
-    @nombre = 'L COMBINADO 39-40',
-    @id_tipo = 2,
-    @cantidad_generada_lts = 700.00,
-    @id_proveedor = 3,
-    @metanol = 5.00,
-    @alcoholes_sup = 0.15,
-    @porcentaje_alcohol_vol = 60.60,
-    @orden_produccion = 1045,
-    @id_estatus = 2,
-    @id_contenedor_destino = 3,
+EXEC sp_insertar_transaccion_liquido_contenedor 
+    @id_contenedor_destino = 14, 
+    @id_liquido = 9, 
+    @cantidad_liquido_lts = 300.00, 
     @persona_encargada = 'manolo@gmail.com',
-    @composicion_liquidos_json = 
-        N'[
-        {
-            "id_contenedor_componente": 3, 
-            "id_liquido_componente": 39, 
-            "cantidad_liquido_componente_lts": 60.00
-        }, 
-        {
-            "id_contenedor_componente": 4, 
-            "id_liquido_componente": 40, 
-            "cantidad_liquido_componente_lts": 40.00
-        }
-        ]';
+    @id_estatus_liquido = 2;
 
 SELECT * FROM liquidos;
 SELECT * FROM transacciones_liquido_contenedor;
+SELECT * FROM contenedores;
+SELECT * FROM combinaciones;
+SELECT * FROM combinaciones_detalle;
+
+-- EXEC sp_insertar_liquido_combinado
+--     @nombre = 'LIQUIDO COMBINADO 6-7->8',
+--     @id_tipo = 2,
+--     @cantidad_generada_lts = 75.00,
+--     @id_proveedor = 3,
+--     @metanol = 10.15,
+--     @alcoholes_sup = 0.1,
+--     @porcentaje_alcohol_vol = 40.60,
+--     @orden_produccion = 1090,
+--     @id_estatus = 2,
+--     @id_contenedor_destino = 8,
+--     @persona_encargada = 'manolo@gmail.com',
+--     @composicion_liquidos_json = 
+--         N'[
+--         {
+--             "id_contenedor_componente": 6, 
+--             "id_liquido_componente": 1, 
+--             "cantidad_liquido_componente_lts": 25.00
+--         }, 
+--         {
+--             "id_contenedor_componente": 7, 
+--             "id_liquido_componente": 2, 
+--             "cantidad_liquido_componente_lts": 25.00
+--         },
+--          {
+--             "id_contenedor_componente": 8, 
+--             "id_liquido_componente": 3, 
+--             "cantidad_liquido_componente_lts": 25.00
+--         }
+--         ]';
+
+-- EXEC sp_insertar_liquido_combinado
+--     @nombre = 'LIQUIDO COMBINADO 9->10',
+--     @id_tipo = 2,
+--     @cantidad_generada_lts = 50.00,
+--     @id_proveedor = 3,
+--     @metanol = 10.15,
+--     @alcoholes_sup = 0.1,
+--     @porcentaje_alcohol_vol = 40.60,
+--     @orden_produccion = 1091,
+--     @id_estatus = 2,
+--     @id_contenedor_destino = 10,
+--     @persona_encargada = 'manolo@gmail.com',
+--     @composicion_liquidos_json = 
+--         N'[
+--         {
+--             "id_contenedor_componente": 9, 
+--             "id_liquido_componente": 4, 
+--             "cantidad_liquido_componente_lts": 25.00
+--         }, 
+--         {
+--             "id_contenedor_componente": 10, 
+--             "id_liquido_componente": 5, 
+--             "cantidad_liquido_componente_lts": 25.00
+--         }
+--         ]';
+
+-- EXEC sp_insertar_liquido_combinado
+--     @nombre = 'LIQUIDO COMBINADO 8->10',
+--     @id_tipo = 2,
+--     @cantidad_generada_lts = 50.00,
+--     @id_proveedor = 3,
+--     @metanol = 10.15,
+--     @alcoholes_sup = 0.1,
+--     @porcentaje_alcohol_vol = 40.60,
+--     @orden_produccion = 1092,
+--     @id_estatus = 2,
+--     @id_contenedor_destino = 10,
+--     @persona_encargada = 'manolo@gmail.com',
+--     @composicion_liquidos_json = 
+--         N'[
+--         {
+--             "id_contenedor_componente": 8, 
+--             "id_liquido_componente": 11, 
+--             "cantidad_liquido_componente_lts": 25.00
+--         }, 
+--         {
+--             "id_contenedor_componente": 10, 
+--             "id_liquido_componente": 12, 
+--             "cantidad_liquido_componente_lts": 25.00
+--         }
+--         ]';
+
+-- EXEC sp_insertar_liquido_combinado
+--     @nombre = 'LIQUIDO COMBINADO 10->11',
+--     @id_tipo = 2,
+--     @cantidad_generada_lts = 75.00,
+--     @id_proveedor = 3,
+--     @metanol = 10.15,
+--     @alcoholes_sup = 0.1,
+--     @porcentaje_alcohol_vol = 40.60,
+--     @orden_produccion = 1093,
+--     @id_estatus = 2,
+--     @id_contenedor_destino = 11,
+--     @persona_encargada = 'manolo@gmail.com',
+--     @composicion_liquidos_json = 
+--         N'[
+--         {
+--             "id_contenedor_componente": 11, 
+--             "id_liquido_componente": 6, 
+--             "cantidad_liquido_componente_lts": 25.00
+--         }, 
+--         {
+--             "id_contenedor_componente": 10, 
+--             "id_liquido_componente": 13, 
+--             "cantidad_liquido_componente_lts": 50.00
+--         }
+--         ]';
 
 IF OBJECT_ID('dbo.sp_obtener_trazabilidad_liquido', 'P') IS NOT NULL
 DROP PROCEDURE dbo.sp_obtener_trazabilidad_liquido;
@@ -741,7 +874,7 @@ BEGIN
         JOIN
             combinaciones_detalle td ON t.id_combinacion = td.id_combinacion
         JOIN
-            liquidos l ON t.id_liquido_base = l.id_liquido
+            liquidos l ON t.id_liquido_combinado = l.id_liquido
         JOIN
             liquidos lc ON td.id_liquido = lc.id_liquido
         WHERE
@@ -763,11 +896,11 @@ BEGIN
         FROM
             CTE_trazabilidad cte
         JOIN
-            combinaciones t ON cte.id_liquido_componente = t.id_liquido_base
+            combinaciones t ON cte.id_liquido_componente = t.id_liquido_combinado
         JOIN
             combinaciones_detalle td ON t.id_combinacion = td.id_combinacion
         JOIN
-            liquidos l ON t.id_liquido_base = l.id_liquido
+            liquidos l ON t.id_liquido_combinado = l.id_liquido
         JOIN
             liquidos lc ON td.id_liquido = lc.id_liquido
     )
@@ -778,7 +911,7 @@ BEGIN
 END;
 GO
 
-EXEC sp_obtener_trazabilidad_liquido @id_liquido_b = 42;
+EXEC sp_obtener_trazabilidad_liquido @id_liquido_b = 14;
 
 SELECT * FROM liquidos;
 SELECT * FROM proveedores;
@@ -790,6 +923,7 @@ SELECT * FROM estatus_contenedor;
 SELECT * FROM estatus_liquido;
 SELECT * FROM estatus_contenedor;
 SELECT * FROM tipos_contenedor;
+SELECT * FROM productos_terminados;
 
 INSERT INTO transacciones_liquido_contenedor (id_contenedor, id_liquido, cantidad_liquido_lts, persona_encargada) VALUES
 (4, 12, 45.00, 'manolo@gmail.com');
