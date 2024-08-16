@@ -746,17 +746,6 @@ BEGIN
 END;
 GO
 
-    -- -- Finally update or set the quantity of liquid in 
-    -- UPDATE
-    --     t
-    -- SET
-    --     t.cantidad_liquido_lts = @cantidad_generada_lts -- SUPONIENDO QUE LA SUMA LA HACEMOS EN POWER APPS
-    -- FROM 
-    --     transacciones_liquido_contenedor t
-    -- WHERE
-    --     t.id_contenedor = @id_contenedor_destino
-    --     AND t.id_liquido = @id_liquido_combinado
-
 EXEC sp_insertar_liquido_combinado
     @nombre = 'LIQUIDO COMBINADO 10->11',
     @id_tipo = 2,
@@ -974,66 +963,5 @@ SELECT * FROM estatus_contenedor;
 SELECT * FROM tipos_contenedor;
 SELECT * FROM productos_terminados;
 
--- -- Create stored procedure to get the status of liquids
--- CREATE PROCEDURE sp_obtener_estatus_liquidos
--- AS
--- BEGIN
---     SET NOCOUNT ON;
---     -- Select descripcion from estatus_liquido table
---     SELECT * FROM estatus_liquido;
--- END;
--- GO
 
--- -- Call the procedure to get estatus of liquids
--- EXEC sp_obtener_estatus_liquidos;
-
--- -- Drop the procedure if it exists
--- IF OBJECT_ID('dbo.sp_insertar_transaccion_liquido_contenedor', 'P') IS NOT NULL
--- DROP PROCEDURE dbo.sp_insertar_transaccion_liquido_contenedor;
--- GO
-
--- -- Create stored procedure to insert a transaction in liquido_contenedor table
--- CREATE PROCEDURE sp_insertar_transaccion_liquido_contenedor
---     @id_contenedor_origen INT,
---     @id_contenedor_destino INT,
---     @id_liquido INT,
---     @cantidad_liquido_lts DECIMAL(10, 2),
---     @persona_encargada VARCHAR(32),
---     @id_estatus_liquido INT
--- AS
--- BEGIN
---     -- Insert into transacciones_liquido_contenedor
---     INSERT INTO transacciones_liquido_contenedor
---     (
---         id_contenedor,
---         id_liquido,
---         cantidad_liquido_lts,
---         persona_encargada,
---         id_estatus
---     )
---     VALUES 
---     (
---         @id_contenedor_destino,
---         @id_liquido,
---         @cantidad_liquido_lts,
---         @persona_encargada,
---         @id_estatus_liquido
---     );
-
---      -- Check if the container exists before attempting the update
---     IF EXISTS (SELECT 1 FROM contenedores WHERE id_contenedor = @id_contenedor_destino)
---     BEGIN
---         UPDATE
---             contenedores
---         SET
---             id_estatus = 1
---         WHERE
---             id_contenedor = @id_contenedor_destino;
---     END
---     ELSE
---     BEGIN
---         RAISERROR('El contenedor especificado no existe.', 16, 1);
---     END;
--- END;
--- GO
 
