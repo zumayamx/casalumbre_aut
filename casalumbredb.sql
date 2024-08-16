@@ -344,7 +344,14 @@ END;
 GO
 
 -- Call stored procedure
-EXEC sp_obtener_datos_contenedor @id_contenedor = 6;   
+EXEC sp_obtener_datos_contenedor @id_contenedor = 15;
+SELECT * FROM estatus_contenedor;
+SELECT * FROM contenedores;
+SELECT * FROM transacciones_liquido_contenedor;
+SELECT * FROM liquidos;
+SELECT * FROM estatus_liquido;
+SELECT * FROM contenedores;
+EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = 11;
 
 -- Drop the procedure if it exists
 IF OBJECT_ID('dbo.sp_obtener_estatus_liquidos', 'P') IS NOT NULL
@@ -371,6 +378,7 @@ GO
 
 -- Create stored procedure to insert a transaction in liquido_contenedor table
 CREATE PROCEDURE sp_insertar_transaccion_liquido_contenedor
+    @id_contenedor_origen INT,
     @id_contenedor_destino INT,
     @id_liquido INT,
     @cantidad_liquido_lts DECIMAL(10, 2),
@@ -378,43 +386,91 @@ CREATE PROCEDURE sp_insertar_transaccion_liquido_contenedor
     @id_estatus_liquido INT
 AS
 BEGIN
-    -- Insert into transacciones_liquido_contenedor
-    INSERT INTO transacciones_liquido_contenedor
-    (
-        id_contenedor,
-        id_liquido,
-        cantidad_liquido_lts,
-        persona_encargada,
-        id_estatus
-    )
-    VALUES 
-    (
-        @id_contenedor_destino,
-        @id_liquido,
-        @cantidad_liquido_lts,
-        @persona_encargada,
-        @id_estatus_liquido
-    );
+    BEGIN TRY
+        -- Start a transaction
+        BEGIN TRANSACTION;
+        
+        -- Insert into transacciones_liquido_contenedor
+        INSERT INTO transacciones_liquido_contenedor
+        (
+            id_contenedor,
+            id_liquido,
+            cantidad_liquido_lts,
+            persona_encargada,
+            id_estatus
+        )
+        VALUES 
+        (
+            @id_contenedor_destino,
+            @id_liquido,
+            @cantidad_liquido_lts,
+            @persona_encargada,
+            @id_estatus_liquido
+        );
 
-     -- Check if the container exists before attempting the update
-    IF EXISTS (SELECT 1 FROM contenedores WHERE id_contenedor = @id_contenedor_destino)
-    BEGIN
-        UPDATE
-            contenedores
-        SET
-            id_estatus = 1
-        WHERE
-            id_contenedor = @id_contenedor_destino;
-    END
-    ELSE
-    BEGIN
-        RAISERROR('El contenedor especificado no existe.', 16, 1);
-    END;
+        -- Check if the destination container exists before attempting the update
+        IF EXISTS (SELECT 1 FROM contenedores WHERE id_contenedor = @id_contenedor_destino)
+        BEGIN
+            UPDATE
+                contenedores
+            SET
+                id_estatus = 1
+            WHERE
+                id_contenedor = @id_contenedor_destino;
+        END
+        ELSE
+        BEGIN
+            RAISERROR('El contenedor de destino especificado no existe.', 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+        -- Check if the origin container and liquid exists before attempting the update
+        IF EXISTS (SELECT 1 FROM transacciones_liquido_contenedor WHERE id_contenedor = @id_contenedor_origen AND id_liquido = @id_liquido)
+        BEGIN
+            -- Update the quantity of liquid in the origin container
+            UPDATE
+                transacciones_liquido_contenedor
+            SET
+                cantidad_liquido_lts = cantidad_liquido_lts - @cantidad_liquido_lts
+            WHERE
+                id_contenedor = @id_contenedor_origen
+                AND id_liquido = @id_liquido;
+
+            -- Ensure the update was successful (no negative quantities)
+            IF (SELECT cantidad_liquido_lts FROM transacciones_liquido_contenedor WHERE id_contenedor = @id_contenedor_origen AND id_liquido = @id_liquido) < 0
+            BEGIN
+                RAISERROR('La cantidad de líquido en el contenedor de origen no puede ser negativa.', 16, 1);
+                ROLLBACK TRANSACTION;
+                RETURN;
+            END
+        END
+        ELSE
+        BEGIN
+            RAISERROR('El contenedor de origen o el líquido especificado no existe.', 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+        -- Commit the transaction if everything is successful
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        -- Rollback the transaction if an error occurs
+        ROLLBACK TRANSACTION;
+        -- Re-throw the error to the caller
+        THROW;
+    END CATCH;
 END;
 GO
 
+SELECT * FROM contenedores;
+SELECT * FROM transacciones_liquido_contenedor;
+SELECT * FROM liquidos;
+
 -- Call the stored procedure to insert a trasaction liquido to container, USE ONLY FOR ONE TRASACTION - IN TEST STATUS
-EXEC sp_insertar_transaccion_liquido_contenedor 
+EXEC sp_insertar_transaccion_liquido_contenedor
+    @id_contenedor_origen = 15,
     @id_contenedor_destino = 6, 
     @id_liquido = 1, 
     @cantidad_liquido_lts = 300.00, 
@@ -727,13 +783,6 @@ EXEC sp_insertar_liquido_combinado
         }
         ]';
 
-EXEC sp_insertar_transaccion_liquido_contenedor 
-    @id_contenedor_destino = 14, 
-    @id_liquido = 9, 
-    @cantidad_liquido_lts = 300.00, 
-    @persona_encargada = 'manolo@gmail.com',
-    @id_estatus_liquido = 2;
-
 SELECT * FROM liquidos;
 SELECT * FROM transacciones_liquido_contenedor;
 SELECT * FROM contenedores;
@@ -925,8 +974,66 @@ SELECT * FROM estatus_contenedor;
 SELECT * FROM tipos_contenedor;
 SELECT * FROM productos_terminados;
 
-INSERT INTO transacciones_liquido_contenedor (id_contenedor, id_liquido, cantidad_liquido_lts, persona_encargada) VALUES
-(4, 12, 45.00, 'manolo@gmail.com');
+-- -- Create stored procedure to get the status of liquids
+-- CREATE PROCEDURE sp_obtener_estatus_liquidos
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+--     -- Select descripcion from estatus_liquido table
+--     SELECT * FROM estatus_liquido;
+-- END;
+-- GO
 
+-- -- Call the procedure to get estatus of liquids
+-- EXEC sp_obtener_estatus_liquidos;
 
+-- -- Drop the procedure if it exists
+-- IF OBJECT_ID('dbo.sp_insertar_transaccion_liquido_contenedor', 'P') IS NOT NULL
+-- DROP PROCEDURE dbo.sp_insertar_transaccion_liquido_contenedor;
+-- GO
+
+-- -- Create stored procedure to insert a transaction in liquido_contenedor table
+-- CREATE PROCEDURE sp_insertar_transaccion_liquido_contenedor
+--     @id_contenedor_origen INT,
+--     @id_contenedor_destino INT,
+--     @id_liquido INT,
+--     @cantidad_liquido_lts DECIMAL(10, 2),
+--     @persona_encargada VARCHAR(32),
+--     @id_estatus_liquido INT
+-- AS
+-- BEGIN
+--     -- Insert into transacciones_liquido_contenedor
+--     INSERT INTO transacciones_liquido_contenedor
+--     (
+--         id_contenedor,
+--         id_liquido,
+--         cantidad_liquido_lts,
+--         persona_encargada,
+--         id_estatus
+--     )
+--     VALUES 
+--     (
+--         @id_contenedor_destino,
+--         @id_liquido,
+--         @cantidad_liquido_lts,
+--         @persona_encargada,
+--         @id_estatus_liquido
+--     );
+
+--      -- Check if the container exists before attempting the update
+--     IF EXISTS (SELECT 1 FROM contenedores WHERE id_contenedor = @id_contenedor_destino)
+--     BEGIN
+--         UPDATE
+--             contenedores
+--         SET
+--             id_estatus = 1
+--         WHERE
+--             id_contenedor = @id_contenedor_destino;
+--     END
+--     ELSE
+--     BEGIN
+--         RAISERROR('El contenedor especificado no existe.', 16, 1);
+--     END;
+-- END;
+-- GO
 
