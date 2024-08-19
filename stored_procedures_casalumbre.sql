@@ -613,7 +613,7 @@ GO
 EXEC sp_insertar_liquido_combinado
     @nombre = 'LIQUIDO COMBINADO 6->7',
     @id_tipo = 2,
-    @cantidad_generada_lts = 100.00,
+    @cantidad_generada_lts = 1000.00,
     @id_proveedor = 3,
     @metanol = 10.15,
     @alcoholes_sup = 0.1,
@@ -627,19 +627,19 @@ EXEC sp_insertar_liquido_combinado
         {
             "id_contenedor_componente": 6, 
             "id_liquido_componente": 1, 
-            "cantidad_liquido_componente_lts": 50.00
+            "cantidad_liquido_componente_lts": 70.00
         }, 
         {
             "id_contenedor_componente": 7, 
             "id_liquido_componente": 2, 
-            "cantidad_liquido_componente_lts": 50.00
+            "cantidad_liquido_componente_lts": 30.00
         }
         ]';
 
 EXEC sp_insertar_liquido_combinado
     @nombre = 'LIQUIDO COMBINADO 8->9->10',
     @id_tipo = 2,
-    @cantidad_generada_lts = 150.00,
+    @cantidad_generada_lts = 1050.00,
     @id_proveedor = 3,
     @metanol = 10.15,
     @alcoholes_sup = 0.1,
@@ -670,7 +670,7 @@ EXEC sp_insertar_liquido_combinado
 EXEC sp_insertar_liquido_combinado
     @nombre = 'LIQUIDO COMBINADO 7->10',
     @id_tipo = 2,
-    @cantidad_generada_lts = 100.00,
+    @cantidad_generada_lts = 1000.00,
     @id_proveedor = 3,
     @metanol = 10.15,
     @alcoholes_sup = 0.1,
@@ -684,19 +684,19 @@ EXEC sp_insertar_liquido_combinado
         {
             "id_contenedor_componente": 7, 
             "id_liquido_componente": 11, 
-            "cantidad_liquido_componente_lts": 50.00
+            "cantidad_liquido_componente_lts": 100.00
         }, 
         {
             "id_contenedor_componente": 10, 
             "id_liquido_componente": 12, 
-            "cantidad_liquido_componente_lts": 50.00
+            "cantidad_liquido_componente_lts": 150.00
         }
         ]';
 
 EXEC sp_insertar_liquido_combinado
     @nombre = 'LIQUIDO COMBINADO 6->8',
     @id_tipo = 2,
-    @cantidad_generada_lts = 100.00,
+    @cantidad_generada_lts = 1000.00,
     @id_proveedor = 3,
     @metanol = 10.15,
     @alcoholes_sup = 0.1,
@@ -710,19 +710,19 @@ EXEC sp_insertar_liquido_combinado
         {
             "id_contenedor_componente": 6, 
             "id_liquido_componente": 1, 
-            "cantidad_liquido_componente_lts": 50.00
+            "cantidad_liquido_componente_lts": 200.00
         }, 
         {
             "id_contenedor_componente": 8, 
             "id_liquido_componente": 3, 
-            "cantidad_liquido_componente_lts": 50.00
+            "cantidad_liquido_componente_lts": 500.00
         }
         ]';
 
 EXEC sp_insertar_liquido_combinado
     @nombre = 'LIQUIDO COMBINADO 8->10',
     @id_tipo = 2,
-    @cantidad_generada_lts = 100.00,
+    @cantidad_generada_lts = 1000.00,
     @id_proveedor = 3,
     @metanol = 10.15,
     @alcoholes_sup = 0.1,
@@ -741,14 +741,14 @@ EXEC sp_insertar_liquido_combinado
         {
             "id_contenedor_componente": 10, 
             "id_liquido_componente": 13, 
-            "cantidad_liquido_componente_lts": 50.00
+            "cantidad_liquido_componente_lts": 150.00
         }
         ]';
 
 EXEC sp_insertar_liquido_combinado
     @nombre = 'LIQUIDO COMBINADO 12->13',
     @id_tipo = 2,
-    @cantidad_generada_lts = 100.00,
+    @cantidad_generada_lts = 1000.00,
     @id_proveedor = 3,
     @metanol = 10.15,
     @alcoholes_sup = 0.1,
@@ -762,19 +762,19 @@ EXEC sp_insertar_liquido_combinado
         {
             "id_contenedor_componente": 12, 
             "id_liquido_componente": 7, 
-            "cantidad_liquido_componente_lts": 50.00
+            "cantidad_liquido_componente_lts": 10.00
         }, 
         {
             "id_contenedor_componente": 13, 
             "id_liquido_componente": 8, 
-            "cantidad_liquido_componente_lts": 50.00
+            "cantidad_liquido_componente_lts": 250.00
         }
         ]';
 
 EXEC sp_insertar_liquido_combinado
     @nombre = 'LIQUIDO COMBINADO 14->15',
     @id_tipo = 2,
-    @cantidad_generada_lts = 100.00,
+    @cantidad_generada_lts = 1000.00,
     @id_proveedor = 3,
     @metanol = 10.15,
     @alcoholes_sup = 0.1,
@@ -788,19 +788,19 @@ EXEC sp_insertar_liquido_combinado
         {
             "id_contenedor_componente": 14, 
             "id_liquido_componente": 9, 
-            "cantidad_liquido_componente_lts": 50.00
+            "cantidad_liquido_componente_lts": 40.00
         }, 
         {
             "id_contenedor_componente": 15, 
             "id_liquido_componente": 10, 
-            "cantidad_liquido_componente_lts": 50.00
+            "cantidad_liquido_componente_lts": 900.00
         }
         ]';
 
 EXEC sp_insertar_liquido_combinado
     @nombre = 'LIQUIDO COMBINADO 15->13',
     @id_tipo = 2,
-    @cantidad_generada_lts = 100.00,
+    @cantidad_generada_lts = 1000.00,
     @id_proveedor = 3,
     @metanol = 10.15,
     @alcoholes_sup = 0.1,
@@ -814,19 +814,19 @@ EXEC sp_insertar_liquido_combinado
         {
             "id_contenedor_componente": 13, 
             "id_liquido_componente": 16, 
-            "cantidad_liquido_componente_lts": 50.00
+            "cantidad_liquido_componente_lts": 150.00
         }, 
         {
             "id_contenedor_componente": 15, 
             "id_liquido_componente": 17, 
-            "cantidad_liquido_componente_lts": 50.00
+            "cantidad_liquido_componente_lts": 150.00
         }
         ]';
 
 EXEC sp_insertar_liquido_combinado
     @nombre = 'LIQUIDO COMBINADO 13->10',
     @id_tipo = 2,
-    @cantidad_generada_lts = 100.00,
+    @cantidad_generada_lts = 1000.00,
     @id_proveedor = 3,
     @metanol = 10.15,
     @alcoholes_sup = 0.1,
@@ -840,12 +840,12 @@ EXEC sp_insertar_liquido_combinado
         {
             "id_contenedor_componente": 13, 
             "id_liquido_componente": 18, 
-            "cantidad_liquido_componente_lts": 50.00
+            "cantidad_liquido_componente_lts": 45.00
         }, 
         {
             "id_contenedor_componente": 10, 
             "id_liquido_componente": 15, 
-            "cantidad_liquido_componente_lts": 50.00
+            "cantidad_liquido_componente_lts": 80.00
         }
         ]';
 
