@@ -61,6 +61,9 @@ INSERT INTO contenedores (nombre, id_tipo, id_ubicacion, fecha_alta, id_estatus)
 ('TANQUE N', 4, 4, '2023-02-01', 2), -- 2 - DISPONIBLE
 ('TANQUE O', 5, 5, '2023-03-01', 2); -- 4 - DISPONIBLE
 
+INSERT INTO contenedores (nombre, id_tipo, id_ubicacion, fecha_alta, id_estatus) VALUES
+('TANQUE R', 5, 5, '2023-03-01', 2);
+
 -- Insert multiple status descriptions into the estatus_liquido table
 INSERT INTO estatus_liquido (descripcion) VALUES 
 ('CUARENTENA'),
@@ -95,6 +98,9 @@ INSERT INTO liquidos (codigo, id_tipo, cantidad_total_lts, fecha_produccion, id_
 ('ORDINARIO', 1, 400.00, GETDATE(), 3, 1.30, 0.20, 38.50, 1008), -- 2 - APROBADO 1
 ('AGUA', 1, 100.00, GETDATE(), 4, 0.00, 0.00, 0.00, 1009), -- 3 - APROBADO 2
 ('MEZCAL A', 1, 750.00, GETDATE(), 5, 1.50, 0.25, 40.00, 1010); -- 2 - APROBADO 1
+
+INSERT INTO liquidos (codigo, id_tipo, cantidad_total_lts, fecha_produccion, id_proveedor, metanol, alcoholes_sup, porcentaje_alchol_vol, orden_produccion) VALUES
+('LIQUIDO AÑADIR', 1, 750.00, GETDATE(), 5, 1.50, 0.25, 40.00, 1900);
 
 -- Ensure the containers are "EN USO" and the liquids are not "CUARENTENA"
 INSERT INTO transacciones_liquido_contenedor (id_contenedor, id_liquido, cantidad_liquido_lts, persona_encargada, id_estatus) VALUES

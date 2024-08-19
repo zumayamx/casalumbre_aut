@@ -859,9 +859,22 @@ DROP PROCEDURE dbo.sp_obtener_trazabilidad_liquido;
 GO
 
 CREATE PROCEDURE sp_obtener_trazabilidad_liquido
-    @id_liquido_b INT
+    @id_contenedor_b INT
 AS
 BEGIN
+    CREATE TABLE #TempTable (
+        id_liquido INT,
+        codigo_liquido VARCHAR(32),
+        cantidad_liquido_dentro_lts DECIMAL(18, 2),
+        ultimo_id_liquido_contenedor INT
+    );
+
+    INSERT INTO #TempTable
+    EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = @id_contenedor_b;
+
+    DECLARE @id_liquido_c INT;
+    SELECT @id_liquido_c = id_liquido FROM #TempTable;
+
     WITH CTE_trazabilidad AS (
         SELECT
             t.id_combinacion,
@@ -884,7 +897,7 @@ BEGIN
         JOIN
             liquidos lc ON td.id_liquido = lc.id_liquido
         WHERE
-            l.id_liquido = @id_liquido_b
+            l.id_liquido = @id_liquido_c  -- Cambiado a @id_liquido_c
         
         UNION ALL
 
@@ -914,11 +927,12 @@ BEGIN
 
     SELECT *
     FROM CTE_trazabilidad
-    ORDER BY nivel, id_combinacion, id_liquido_combinado, id_liquido_componente
+    ORDER BY nivel, id_combinacion, id_liquido_combinado, id_liquido_componente;
 END;
 GO
 
-EXEC sp_obtener_trazabilidad_liquido @id_liquido_b = 20;
+EXEC sp_obtener_trazabilidad_liquido @id_contenedor_b = 10;
+EXEC sp_obtener_trazabilidad_liquido @id_contenedor_b = 11;
 EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = 11;
 EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = 10;
 
