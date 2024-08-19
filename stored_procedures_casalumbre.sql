@@ -918,7 +918,9 @@ BEGIN
 END;
 GO
 
-EXEC sp_obtener_trazabilidad_liquido @id_liquido_b = 19;
+EXEC sp_obtener_trazabilidad_liquido @id_liquido_b = 20;
+EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = 11;
+EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = 10;
 
 SELECT * FROM liquidos;
 SELECT * FROM proveedores;
@@ -930,7 +932,8 @@ SELECT * FROM estatus_contenedor;
 SELECT * FROM estatus_liquido;
 SELECT * FROM estatus_contenedor;
 SELECT * FROM tipos_contenedor;
-SELECT * FROM productos_terminados;
+
+
 
 
 
