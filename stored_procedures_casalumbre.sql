@@ -960,12 +960,15 @@ BEGIN
         t.id_liquido_contendor DESC;
 END;
 
-EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 14;
+EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 15;
 
 EXEC sp_obtener_trazabilidad_liquido @id_contenedor_b = 10;
 EXEC sp_obtener_trazabilidad_liquido @id_contenedor_b = 11;
 EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = 11;
 EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = 10;
+EXEC sp_obtener_datos_contenedor @id_contenedor = 16;
+EXEC sp_obtener_datos_contenedor @id_contenedor = 17;
+EXEC sp_obtener_datos_contenedor @id_contenedor = 18;
 
 SELECT * FROM liquidos;
 SELECT * FROM proveedores;

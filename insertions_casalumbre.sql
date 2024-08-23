@@ -62,7 +62,16 @@ INSERT INTO contenedores (nombre, id_tipo, id_ubicacion, fecha_alta, id_estatus)
 ('TANQUE O', 5, 5, '2023-03-01', 2); -- 4 - DISPONIBLE
 
 INSERT INTO contenedores (nombre, id_tipo, id_ubicacion, fecha_alta, id_estatus) VALUES
+('TANQUE P', 5, 5, '2023-03-01', 2);
+
+INSERT INTO contenedores (nombre, id_tipo, id_ubicacion, fecha_alta, id_estatus) VALUES
+('TANQUE Q', 5, 5, '2023-03-01', 2);
+
+INSERT INTO contenedores (nombre, id_tipo, id_ubicacion, fecha_alta, id_estatus) VALUES
 ('TANQUE R', 5, 5, '2023-03-01', 2);
+
+INSERT INTO contenedores (nombre, id_tipo, id_ubicacion, fecha_alta, id_estatus) VALUES
+('TANQUE S', 5, 5, '2023-03-01', 2);
 
 -- Insert multiple status descriptions into the estatus_liquido table
 INSERT INTO estatus_liquido (descripcion) VALUES 
