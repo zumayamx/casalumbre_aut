@@ -927,7 +927,7 @@ BEGIN
 
     SELECT *
     FROM CTE_trazabilidad
-    ORDER BY nivel, id_combinacion, id_liquido_combinado, id_liquido_componente;
+    ORDER BY nivel, id_combinacion, id_liquido_combinado, id_liquido_componente
 END;
 GO
 
@@ -982,9 +982,66 @@ SELECT * FROM estatus_liquido;
 SELECT * FROM estatus_contenedor;
 SELECT * FROM tipos_contenedor;
 
+IF OBJECT_ID('dbo.sp_obtener_trazabilidad_liquido_b', 'P') IS NOT NULL
+DROP PROCEDURE dbo.sp_obtener_trazabilidad_liquido_b;
+GO
+CREATE PROCEDURE sp_obtener_trazabilidad_liquido_b
+    @id_liquido_b INT
+AS
+BEGIN
+    WITH CTE_trazabilidad AS (
+        SELECT
+            t.id_combinacion,
+            l.fecha_produccion,
+            l.id_liquido AS id_liquido_combinado,
+            l.codigo AS codigo_liquido_combinado,
+            l.id_tipo AS tipo_liquido_combinado,
+            l.orden_produccion,
+            td.id_liquido AS id_liquido_componente,
+            lc.codigo AS codigo_componente,
+            lc.id_tipo AS tipo_componente,
+            td.cantidad_lts,
+            0 AS nivel
+        FROM 
+            combinaciones t
+        JOIN
+            combinaciones_detalle td ON t.id_combinacion = td.id_combinacion
+        JOIN
+            liquidos l ON t.id_liquido_combinado = l.id_liquido
+        JOIN
+            liquidos lc ON td.id_liquido = lc.id_liquido
+        WHERE
+            l.id_liquido = @id_liquido_b
+        
+        UNION ALL
+        SELECT
+            t.id_combinacion,
+            l.fecha_produccion,
+            l.id_liquido AS id_liquido_combinado,
+            l.codigo AS codigo_liquido_combinado,
+            l.id_tipo AS tipo_liquido_combinado,
+            l.orden_produccion,
+            td.id_liquido AS id_liquido_componente,
+            lc.codigo AS codigo_componente,
+            lc.id_tipo AS tipo_componente,
+            td.cantidad_lts,
+            cte.nivel + 1
+        FROM
+            CTE_trazabilidad cte
+        JOIN
+            combinaciones t ON cte.id_liquido_componente = t.id_liquido_combinado
+        JOIN
+            combinaciones_detalle td ON t.id_combinacion = td.id_combinacion
+        JOIN
+            liquidos l ON t.id_liquido_combinado = l.id_liquido
+        JOIN
+            liquidos lc ON td.id_liquido = lc.id_liquido
+    )
+    SELECT *
+    FROM CTE_trazabilidad
+    ORDER BY nivel, id_combinacion, id_liquido_combinado, id_liquido_componente
+END;
+GO
 
-
-
-
-
+EXEC sp_obtener_trazabilidad_liquido_b @id_liquido_b = 19;
 
