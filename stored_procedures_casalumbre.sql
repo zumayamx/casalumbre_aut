@@ -985,6 +985,7 @@ SELECT * FROM tipos_contenedor;
 IF OBJECT_ID('dbo.sp_obtener_trazabilidad_liquido_b', 'P') IS NOT NULL
 DROP PROCEDURE dbo.sp_obtener_trazabilidad_liquido_b;
 GO
+
 CREATE PROCEDURE sp_obtener_trazabilidad_liquido_b
     @id_liquido_b INT
 AS
@@ -1045,3 +1046,4 @@ GO
 
 EXEC sp_obtener_trazabilidad_liquido_b @id_liquido_b = 19;
 
+SELECT * FROM liquidos;

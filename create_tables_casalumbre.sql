@@ -139,10 +139,10 @@ GO
 -- Create the table with the correct structure and foreign keys
 CREATE TABLE productos_terminados (
     id_producto_terminado INT NOT NULL IDENTITY(1,1) PRIMARY KEY, -- Unique identifier for the finished product
-    id_liquido_contenedor INT NOT NULL, -- Foreign key referencing contenedores_liquido
+    id_liquido INT NOT NULL, -- Foreign key referencing liquidos
     fecha_termino DATE NOT NULL DEFAULT GETDATE(), -- Date when the product was finished, default to current date
     cantidad_liquido_terminada_lts DECIMAL(10, 2), -- Number of bottles produced
-    FOREIGN KEY (id_liquido_contenedor) REFERENCES transacciones_liquido_contenedor(id_liquido_contendor)
+    FOREIGN KEY (id_liquido) REFERENCES liquidos(id_liquido)
 );
 
 -- Drop the table if it exists
