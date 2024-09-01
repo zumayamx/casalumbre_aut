@@ -158,7 +158,6 @@ BEGIN
 END;
 GO
 
-SELECT * FROM contenedores;
 EXEC sp_insertar_transaccion_liquido_contenedor
     @id_contenedor_destino = 6, 
     @id_liquido = 1, 
@@ -228,10 +227,6 @@ EXEC sp_insertar_transaccion_liquido_contenedor
     @cantidad_liquido_lts = 750.00, 
     @persona_encargada = 'manolo@gmail.com',
     @id_estatus_liquido = 2;
-
-SELECT * FROM liquidos;
-SELECT * FROM contenedores;
-SELECT * FROM transacciones_liquido_contenedor;
 
 -- Drop the procedure if it exists
 IF OBJECT_ID('dbo.sp_insertar_transferencia_liquido_contenedor', 'P') IS NOT NULL
@@ -485,10 +480,322 @@ GO
 -- Call the stored procedure
 EXEC sp_obtener_datos_liquido @id_liquido = 5;
 
--- Drop the procedure if it exists
+-- -- Drop the procedure if it exists
+-- IF OBJECT_ID('dbo.sp_insertar_liquido_combinado', 'P') IS NOT NULL
+-- DROP PROCEDURE dbo.sp_insertar_liquido_combinado;
+-- GO
+-- CREATE PROCEDURE sp_insertar_liquido_combinado
+--     @nombre VARCHAR(32),
+--     @id_tipo INT,
+--     @cantidad_generada_lts DECIMAL(10, 2),
+--     @id_proveedor INT,
+--     @metanol DECIMAL(10, 2),
+--     @alcoholes_sup DECIMAL(10, 2),
+--     @porcentaje_alcohol_vol DECIMAL(10, 2),
+--     @orden_produccion INT,
+--     @id_estatus INT,
+--     @id_contenedor_destino INT,
+--     @persona_encargada VARCHAR(32),
+--     @composicion_liquidos_json NVARCHAR(MAX) -- This JSON contains data for each liquid component in the combined liquid
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+
+--     -- Begin the transaction
+--     BEGIN TRY
+--         BEGIN TRANSACTION;
+
+--         DECLARE @id_liquido_combinado INT;
+--         DECLARE @id_combinacion INT;
+
+--        IF EXISTS (SELECT 1 FROM contenedores WHERE id_contenedor = @id_contenedor_destino AND id_estatus = 2)
+--         BEGIN
+--             UPDATE
+--                 contenedores
+--             SET
+--                 id_estatus = 1
+--             WHERE
+--                 id_contenedor = @id_contenedor_destino;
+--         END
+
+--         -- Insertar el nuevo registro en la tabla liquidos
+--         INSERT INTO liquidos
+--         (
+--             codigo,
+--             id_tipo,
+--             cantidad_total_lts,
+--             id_proveedor,
+--             metanol,
+--             alcoholes_sup,
+--             porcentaje_alchol_vol,
+--             orden_produccion
+--         )
+--         VALUES
+--         (
+--             @nombre,
+--             @id_tipo,
+--             @cantidad_generada_lts,
+--             @id_proveedor,
+--             @metanol,
+--             @alcoholes_sup,
+--             @porcentaje_alcohol_vol,
+--             @orden_produccion
+--         );
+
+--         -- Retrieve the id_liquido_combinado of the liquid that was just inserted.
+--         SET @id_liquido_combinado = SCOPE_IDENTITY();
+
+--         -- Insert in combinaciones table
+--         INSERT INTO combinaciones
+--         (
+--             id_liquido_combinado
+--         )
+--         VALUES
+--         (
+--             @id_liquido_combinado
+--         );
+
+--         SET @id_combinacion = SCOPE_IDENTITY();
+
+--         -- Insert into the combinaciones_detalle table to specify the components of the combined liquid.
+--         INSERT INTO combinaciones_detalle
+--         (
+--             id_combinacion,
+--             id_liquido,
+--             cantidad_lts
+--         )
+--         SELECT 
+--             @id_combinacion,
+--             id_liquido_componente,
+--             cantidad_liquido_componente_lts
+--         FROM
+--             OPENJSON(@composicion_liquidos_json)
+--         WITH
+--         (
+--             id_liquido_componente INT '$.id_liquido_componente',
+--             cantidad_liquido_componente_lts DECIMAL(10, 2) '$.cantidad_liquido_componente_lts'
+--         );
+
+--         -- Update the quantities in the containers
+--         UPDATE 
+--             t
+--         SET 
+--             t.cantidad_liquido_lts = t.cantidad_liquido_lts - c.cantidad_liquido_componente_lts
+--         FROM
+--             transacciones_liquido_contenedor t
+--         JOIN 
+--             OPENJSON(@composicion_liquidos_json)
+--         WITH
+--         (
+--             id_contenedor_componente INT '$.id_contenedor_componente',
+--             id_liquido_componente INT '$.id_liquido_componente',
+--             cantidad_liquido_componente_lts DECIMAL (10, 2) '$.cantidad_liquido_componente_lts'
+--         ) c ON t.id_contenedor = c.id_contenedor_componente AND t.id_liquido = c.id_liquido_componente;
+
+--         -- Insert the combined liquid in the destination container
+--         INSERT INTO transacciones_liquido_contenedor
+--         (
+--             id_contenedor,
+--             id_liquido,
+--             cantidad_liquido_lts,
+--             persona_encargada,
+--             id_estatus
+--         )
+--         VALUES
+--         (
+--             @id_contenedor_destino,
+--             @id_liquido_combinado,
+--             @cantidad_generada_lts,
+--             @persona_encargada,
+--             @id_estatus
+--         );
+
+--         -- Commit the transaction if everything is successful
+--         COMMIT TRANSACTION;
+--     END TRY
+--     BEGIN CATCH
+--         -- If there is an error, rollback the transaction
+--         ROLLBACK TRANSACTION;
+
+--         -- Raise the error again to the caller
+--         THROW;
+--     END CATCH;
+-- END;
+-- GO
+
+-- IF OBJECT_ID('dbo.sp_insertar_liquido_combinado', 'P') IS NOT NULL
+-- DROP PROCEDURE dbo.sp_insertar_liquido_combinado;
+-- GO
+
+-- CREATE PROCEDURE sp_insertar_liquido_combinado
+--     @nombre VARCHAR(32),
+--     @id_tipo INT,
+--     @cantidad_generada_lts DECIMAL(10, 2),
+--     @id_proveedor INT,
+--     @metanol DECIMAL(10, 2),
+--     @alcoholes_sup DECIMAL(10, 2),
+--     @porcentaje_alcohol_vol DECIMAL(10, 2),
+--     @orden_produccion INT,
+--     @id_estatus INT,
+--     @id_contenedor_destino INT,
+--     @persona_encargada VARCHAR(32),
+--     @composicion_liquidos_json NVARCHAR(MAX) -- This JSON contains data for each liquid component in the combined liquid
+-- AS
+-- BEGIN
+--     SET NOCOUNT ON;
+
+--     -- Begin the transaction
+--     BEGIN TRY
+--         BEGIN TRANSACTION;
+
+--         DECLARE @id_liquido_combinado INT;
+--         DECLARE @id_combinacion INT;
+--         DECLARE @id_liquido_componente INT;
+
+--         IF EXISTS (SELECT 1 FROM contenedores WHERE id_contenedor = @id_contenedor_destino AND id_estatus = 2)
+--         BEGIN
+--             UPDATE
+--                 contenedores
+--             SET
+--                 id_estatus = 1
+--             WHERE
+--                 id_contenedor = @id_contenedor_destino;
+--         END
+
+--         -- Insertar el nuevo registro en la tabla liquidos
+--         INSERT INTO liquidos
+--         (
+--             codigo,
+--             id_tipo,
+--             cantidad_total_lts,
+--             id_proveedor,
+--             metanol,
+--             alcoholes_sup,
+--             porcentaje_alchol_vol,
+--             orden_produccion
+--         )
+--         VALUES
+--         (
+--             @nombre,
+--             @id_tipo,
+--             @cantidad_generada_lts,
+--             @id_proveedor,
+--             @metanol,
+--             @alcoholes_sup,
+--             @porcentaje_alcohol_vol,
+--             @orden_produccion
+--         );
+
+--         -- Retrieve the id_liquido_combinado of the liquid that was just inserted.
+--         SET @id_liquido_combinado = SCOPE_IDENTITY();
+
+--         -- Insert in combinaciones table
+--         INSERT INTO combinaciones
+--         (
+--             id_liquido_combinado
+--         )
+--         VALUES
+--         (
+--             @id_liquido_combinado
+--         );
+
+--         SET @id_combinacion = SCOPE_IDENTITY();
+
+--         -- Process the JSON to insert into combinaciones_detalle table
+--         DECLARE @id_contenedor_componente INT;
+--         DECLARE @cantidad_liquido_componente_lts DECIMAL(10, 2);
+
+--         DECLARE cur CURSOR FOR
+--         SELECT 
+--             id_contenedor_componente,
+--             cantidad_liquido_componente_lts
+--         FROM 
+--             OPENJSON(@composicion_liquidos_json)
+--         WITH
+--         (
+--             id_contenedor_componente INT '$.id_contenedor_componente',
+--             cantidad_liquido_componente_lts DECIMAL(10, 2) '$.cantidad_liquido_componente_lts'
+--         );
+
+--         OPEN cur;
+
+--         FETCH NEXT FROM cur INTO @id_contenedor_componente, @cantidad_liquido_componente_lts;
+
+--         WHILE @@FETCH_STATUS = 0
+--         BEGIN
+--             -- Obtener id_liquido_componente usando sp_obtener_datos_validos_liquido_contenedor
+--             EXEC @id_liquido_componente = sp_obtener_datos_validos_liquido_contenedor @id_contenedor = @id_contenedor_componente;
+
+--             -- Insert into combinaciones_detalle
+--             INSERT INTO combinaciones_detalle
+--             (
+--                 id_combinacion,
+--                 id_liquido,
+--                 cantidad_lts
+--             )
+--             VALUES
+--             (
+--                 @id_combinacion,
+--                 @id_liquido_componente,
+--                 @cantidad_liquido_componente_lts
+--             );
+
+--             FETCH NEXT FROM cur INTO @id_contenedor_componente, @cantidad_liquido_componente_lts;
+--         END;
+
+--         CLOSE cur;
+--         DEALLOCATE cur;
+
+--         -- Update the quantities in the containers
+--         UPDATE 
+--             t
+--         SET 
+--             t.cantidad_liquido_lts = t.cantidad_liquido_lts - c.cantidad_liquido_componente_lts
+--         FROM
+--             transacciones_liquido_contenedor t
+--         JOIN 
+--             OPENJSON(@composicion_liquidos_json)
+--         WITH
+--         (
+--             id_contenedor_componente INT '$.id_contenedor_componente',
+--             cantidad_liquido_componente_lts DECIMAL (10, 2) '$.cantidad_liquido_componente_lts'
+--         ) c ON t.id_contenedor = c.id_contenedor_componente AND t.id_liquido = @id_liquido_componente;
+
+--         -- Insert the combined liquid in the destination container
+--         INSERT INTO transacciones_liquido_contenedor
+--         (
+--             id_contenedor,
+--             id_liquido,
+--             cantidad_liquido_lts,
+--             persona_encargada,
+--             id_estatus
+--         )
+--         VALUES
+--         (
+--             @id_contenedor_destino,
+--             @id_liquido_combinado,
+--             @cantidad_generada_lts,
+--             @persona_encargada,
+--             @id_estatus
+--         );
+
+--         -- Commit the transaction if everything is successful
+--         COMMIT TRANSACTION;
+--     END TRY
+--     BEGIN CATCH
+--         -- If there is an error, rollback the transaction
+--         ROLLBACK TRANSACTION;
+
+--         -- Raise the error again to the caller
+--         THROW;
+--     END CATCH;
+-- END;
+-- GO
+
 IF OBJECT_ID('dbo.sp_insertar_liquido_combinado', 'P') IS NOT NULL
 DROP PROCEDURE dbo.sp_insertar_liquido_combinado;
 GO
+
 CREATE PROCEDURE sp_insertar_liquido_combinado
     @nombre VARCHAR(32),
     @id_tipo INT,
@@ -512,8 +819,9 @@ BEGIN
 
         DECLARE @id_liquido_combinado INT;
         DECLARE @id_combinacion INT;
+        DECLARE @id_liquido_componente INT;
 
-       IF EXISTS (SELECT 1 FROM contenedores WHERE id_contenedor = @id_contenedor_destino AND id_estatus = 2)
+        IF EXISTS (SELECT 1 FROM contenedores WHERE id_contenedor = @id_contenedor_destino AND id_estatus = 2)
         BEGIN
             UPDATE
                 contenedores
@@ -562,24 +870,70 @@ BEGIN
 
         SET @id_combinacion = SCOPE_IDENTITY();
 
-        -- Insert into the combinaciones_detalle table to specify the components of the combined liquid.
-        INSERT INTO combinaciones_detalle
-        (
-            id_combinacion,
-            id_liquido,
-            cantidad_lts
-        )
+        -- Process the JSON to insert into combinaciones_detalle table
+        DECLARE @id_contenedor_componente INT;
+        DECLARE @cantidad_liquido_componente_lts DECIMAL(10, 2);
+
+        DECLARE cur CURSOR FOR
         SELECT 
-            @id_combinacion,
-            id_liquido_componente,
+            id_contenedor_componente,
             cantidad_liquido_componente_lts
-        FROM
+        FROM 
             OPENJSON(@composicion_liquidos_json)
         WITH
         (
-            id_liquido_componente INT '$.id_liquido_componente',
+            id_contenedor_componente INT '$.id_contenedor_componente',
             cantidad_liquido_componente_lts DECIMAL(10, 2) '$.cantidad_liquido_componente_lts'
         );
+
+        OPEN cur;
+
+        FETCH NEXT FROM cur INTO @id_contenedor_componente, @cantidad_liquido_componente_lts;
+
+        WHILE @@FETCH_STATUS = 0
+        BEGIN
+            -- Crear una tabla temporal para almacenar el resultado de sp_obtener_datos_validos_liquido_contenedor
+            DECLARE @resultado TABLE (
+                id_liquido INT,
+                codigo_liquido VARCHAR(255), 
+                cantidad_liquido_dentro_lts DECIMAL(10, 2),
+                ultimo_id_liquido_contenedor INT
+            );
+
+            -- Insertar los resultados del procedimiento en la tabla temporal
+            INSERT INTO @resultado
+            EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = @id_contenedor_componente;
+
+            -- Obtener el id_liquido de la tabla temporal
+            SELECT @id_liquido_componente = id_liquido
+            FROM @resultado;
+
+            -- Verificar que el id_liquido_componente no sea NULL
+            IF @id_liquido_componente IS NULL
+            BEGIN
+                ROLLBACK TRANSACTION;
+                THROW 50001, 'Error: El id_liquido obtenido es NULL o no válido.', 1;
+            END
+
+            -- Insert into combinaciones_detalle
+            INSERT INTO combinaciones_detalle
+            (
+                id_combinacion,
+                id_liquido,
+                cantidad_lts
+            )
+            VALUES
+            (
+                @id_combinacion,
+                @id_liquido_componente,
+                @cantidad_liquido_componente_lts
+            );
+
+            FETCH NEXT FROM cur INTO @id_contenedor_componente, @cantidad_liquido_componente_lts;
+        END;
+
+        CLOSE cur;
+        DEALLOCATE cur;
 
         -- Update the quantities in the containers
         UPDATE 
@@ -593,9 +947,8 @@ BEGIN
         WITH
         (
             id_contenedor_componente INT '$.id_contenedor_componente',
-            id_liquido_componente INT '$.id_liquido_componente',
             cantidad_liquido_componente_lts DECIMAL (10, 2) '$.cantidad_liquido_componente_lts'
-        ) c ON t.id_contenedor = c.id_contenedor_componente AND t.id_liquido = c.id_liquido_componente;
+        ) c ON t.id_contenedor = c.id_contenedor_componente AND t.id_liquido = @id_liquido_componente;
 
         -- Insert the combined liquid in the destination container
         INSERT INTO transacciones_liquido_contenedor
@@ -628,8 +981,40 @@ BEGIN
 END;
 GO
 
-EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = 12;
+EXEC sp_insertar_liquido_combinado
+    @nombre = 'LIQUIDO COMBINADO 7->19',
+    @id_tipo = 2,
+    @cantidad_generada_lts = 1000.00,
+    @id_proveedor = 3,
+    @metanol = 10.15,
+    @alcoholes_sup = 0.1,
+    @porcentaje_alcohol_vol = 40.60,
+    @orden_produccion = 1011,
+    @id_estatus = 2,
+    @id_contenedor_destino = 12,
+    @persona_encargada = 'manolo@gmail.com',
+    @composicion_liquidos_json = 
+        N'[
+        {
+            "id_contenedor_componente": 12,
+            "cantidad_liquido_componente_lts": 70.00
+        }, 
+        {
+            "id_contenedor_componente": 7,
+            "cantidad_liquido_componente_lts": 30.00
+        }
+        ]';
+
+SELECT * FROM liquidos;
+SELECT * FROM combinaciones;
+SELECT * FROM combinaciones_detalle;
+SELECT * FROM estatus_liquido;
 SELECT * FROM transacciones_liquido_contenedor;
+SELECT * FROM contenedores;
+EXEC sp_obtener_datos_contenedor @id_contenedor = 3;
+
+EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = 7;
+
 
 EXEC sp_insertar_liquido_combinado
     @nombre = 'LIQUIDO COMBINADO 6->7',
@@ -1038,4 +1423,32 @@ SELECT * FROM estatus_contenedor;
 SELECT * FROM tipos_contenedor;
 SELECT * FROM productos_terminados;
 
+SELECT 
+    fk.name AS ForeignKeyName,
+    tp.name AS ParentTableName,
+    cp.name AS ParentColumnName,
+    tr.name AS ReferencedTableName,
+    cr.name AS ReferencedColumnName
+FROM 
+    sys.foreign_keys AS fk
+JOIN 
+    sys.foreign_key_columns AS fkc 
+    ON fk.object_id = fkc.constraint_object_id
+JOIN 
+    sys.tables AS tp 
+    ON fkc.parent_object_id = tp.object_id
+JOIN 
+    sys.columns AS cp 
+    ON fkc.parent_object_id = cp.object_id 
+    AND fkc.parent_column_id = cp.column_id
+JOIN 
+    sys.tables AS tr 
+    ON fkc.referenced_object_id = tr.object_id
+JOIN 
+    sys.columns AS cr 
+    ON fkc.referenced_object_id = cr.object_id 
+    AND fkc.referenced_column_id = cr.column_id
+WHERE 
+    fk.name = 'FK__combinaci__id_li__68336F3E';
 
+EXEC sp_obtener_datos_contenedor_liquido @id_contenedodor = 10;
