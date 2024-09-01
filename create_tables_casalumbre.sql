@@ -142,6 +142,7 @@ CREATE TABLE productos_terminados (
     id_liquido INT NOT NULL, -- Foreign key referencing liquidos
     fecha_termino DATE NOT NULL DEFAULT GETDATE(), -- Date when the product was finished, default to current date
     cantidad_liquido_terminada_lts DECIMAL(10, 2), -- Number of bottles produced
+    persona_encargada VARCHAR(32) NOT NULL,
     FOREIGN KEY (id_liquido) REFERENCES liquidos(id_liquido)
 );
 
