@@ -105,8 +105,22 @@ BEGIN
     BEGIN TRY
         -- Start a transaction
         BEGIN TRANSACTION;
-        
-        -- Insert into transacciones_liquido_contenedor
+
+        -- Validación: verificar si el contenedor de destino es válido
+        IF NOT EXISTS (
+            SELECT 1 
+            FROM contenedores 
+            WHERE id_contenedor = @id_contenedor_destino
+              AND fecha_baja IS NULL
+              AND id_estatus < 3
+        )
+        BEGIN
+            RAISERROR('El contenedor de destino no es válido o está dado de baja.', 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END
+
+        -- Insertar en transacciones_liquido_contenedor
         INSERT INTO transacciones_liquido_contenedor
         (
             id_contenedor,
@@ -124,22 +138,15 @@ BEGIN
             @id_estatus_liquido
         );
 
-        -- Check if the destination container exists before attempting the update
-        IF EXISTS (SELECT 1 FROM contenedores WHERE id_contenedor = @id_contenedor_destino)
-        BEGIN
-            UPDATE
-                contenedores
-            SET
-                id_estatus = 1
-            WHERE
-                id_contenedor = @id_contenedor_destino;
-        END
-        ELSE
-        BEGIN
-            RAISERROR('El contenedor de destino especificado no existe.', 16, 1);
-            ROLLBACK TRANSACTION;
-            RETURN;
-        END;
+        -- Actualizar el estatus del contenedor de destino si existe
+        UPDATE
+            contenedores
+        SET
+            id_estatus = 1
+        WHERE
+            id_contenedor = @id_contenedor_destino;
+
+        -- Commit the transaction
         COMMIT TRANSACTION;
     END TRY
     BEGIN CATCH
@@ -151,6 +158,7 @@ BEGIN
 END;
 GO
 
+SELECT * FROM contenedores;
 EXEC sp_insertar_transaccion_liquido_contenedor
     @id_contenedor_destino = 6, 
     @id_liquido = 1, 
@@ -505,6 +513,16 @@ BEGIN
         DECLARE @id_liquido_combinado INT;
         DECLARE @id_combinacion INT;
 
+       IF EXISTS (SELECT 1 FROM contenedores WHERE id_contenedor = @id_contenedor_destino AND id_estatus = 2)
+        BEGIN
+            UPDATE
+                contenedores
+            SET
+                id_estatus = 1
+            WHERE
+                id_contenedor = @id_contenedor_destino;
+        END
+
         -- Insertar el nuevo registro en la tabla liquidos
         INSERT INTO liquidos
         (
@@ -610,6 +628,9 @@ BEGIN
 END;
 GO
 
+EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = 12;
+SELECT * FROM transacciones_liquido_contenedor;
+
 EXEC sp_insertar_liquido_combinado
     @nombre = 'LIQUIDO COMBINADO 6->7',
     @id_tipo = 2,
@@ -620,7 +641,7 @@ EXEC sp_insertar_liquido_combinado
     @porcentaje_alcohol_vol = 40.60,
     @orden_produccion = 1011,
     @id_estatus = 2,
-    @id_contenedor_destino = 7,
+    @id_contenedor_destino = 19,
     @persona_encargada = 'manolo@gmail.com',
     @composicion_liquidos_json = 
         N'[
@@ -849,10 +870,6 @@ EXEC sp_insertar_liquido_combinado
         }
         ]';
 
-SELECT * FROM transacciones_liquido_contenedor;
-SELECT * FROM liquidos;
-EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = 10;
-
 -- Drop procedure if exists
 IF OBJECT_ID('dbo.sp_obtener_trazabilidad_liquido', 'P') IS NOT NULL
 DROP PROCEDURE dbo.sp_obtener_trazabilidad_liquido;
@@ -959,17 +976,7 @@ BEGIN
     ORDER BY 
         t.id_liquido_contendor DESC;
 END;
-
-EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 15;
-
-EXEC sp_obtener_trazabilidad_liquido @id_contenedor_b = 10;
-EXEC sp_obtener_trazabilidad_liquido @id_contenedor_b = 11;
-
-EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = 11;
-EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = 15;
-EXEC sp_obtener_datos_contenedor @id_contenedor = 16;
-EXEC sp_obtener_datos_contenedor @id_contenedor = 17;
-EXEC sp_obtener_datos_contenedor @id_contenedor = 18;
+GO
 
 IF OBJECT_ID('dbo.sp_insertar_producto_terminado', 'P') IS NOT NULL
 DROP PROCEDURE dbo.sp_insertar_producto_terminado;
@@ -1031,75 +1038,4 @@ SELECT * FROM estatus_contenedor;
 SELECT * FROM tipos_contenedor;
 SELECT * FROM productos_terminados;
 
-SELECT * FROM transacciones_liquido_contenedor;
-SELECT * FROM productos_terminados;
-SELECT * FROM liquidos;
-EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = 11;
-SELECT * FROM estatus_liquido;
-EXEC sp_obtener_datos_contenedor @id_contenedor = 11;
-SELECT * FROM contenedores;
-SELECT * FROM estatus_contenedor;
 
--- IF OBJECT_ID('dbo.sp_obtener_trazabilidad_liquido_b', 'P') IS NOT NULL
--- DROP PROCEDURE dbo.sp_obtener_trazabilidad_liquido_b;
--- GO
-
--- CREATE PROCEDURE sp_obtener_trazabilidad_liquido_b
---     @id_liquido_b INT
--- AS
--- BEGIN
---     WITH CTE_trazabilidad AS (
---         SELECT
---             t.id_combinacion,
---             l.fecha_produccion,
---             l.id_liquido AS id_liquido_combinado,
---             l.codigo AS codigo_liquido_combinado,
---             l.id_tipo AS tipo_liquido_combinado,
---             l.orden_produccion,
---             td.id_liquido AS id_liquido_componente,
---             lc.codigo AS codigo_componente,
---             lc.id_tipo AS tipo_componente,
---             td.cantidad_lts,
---             0 AS nivel
---         FROM 
---             combinaciones t
---         JOIN
---             combinaciones_detalle td ON t.id_combinacion = td.id_combinacion
---         JOIN
---             liquidos l ON t.id_liquido_combinado = l.id_liquido
---         JOIN
---             liquidos lc ON td.id_liquido = lc.id_liquido
---         WHERE
---             l.id_liquido = @id_liquido_b
-        
---         UNION ALL
---         SELECT
---             t.id_combinacion,
---             l.fecha_produccion,
---             l.id_liquido AS id_liquido_combinado,
---             l.codigo AS codigo_liquido_combinado,
---             l.id_tipo AS tipo_liquido_combinado,
---             l.orden_produccion,
---             td.id_liquido AS id_liquido_componente,
---             lc.codigo AS codigo_componente,
---             lc.id_tipo AS tipo_componente,
---             td.cantidad_lts,
---             cte.nivel + 1
---         FROM
---             CTE_trazabilidad cte
---         JOIN
---             combinaciones t ON cte.id_liquido_componente = t.id_liquido_combinado
---         JOIN
---             combinaciones_detalle td ON t.id_combinacion = td.id_combinacion
---         JOIN
---             liquidos l ON t.id_liquido_combinado = l.id_liquido
---         JOIN
---             liquidos lc ON td.id_liquido = lc.id_liquido
---     )
---     SELECT *
---     FROM CTE_trazabilidad
---     ORDER BY nivel, id_combinacion, id_liquido_combinado, id_liquido_componente
--- END;
--- GO
-
--- EXEC sp_obtener_trazabilidad_liquido_b @id_liquido_b = 19;
