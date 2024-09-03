@@ -1277,3 +1277,83 @@ EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 10;
 
 EXEC sp_obtener_estatus_liquidos;
 
+IF OBJECT_ID('dbo.sp_ obtener_tipos_contenedor', 'P') IS NOT NULL
+DROP PROCEDURE dbo.sp_obtener_tipos_contenddor;
+GO
+
+CREATE PROCEDURE sp_obtener_tipos_contenedor
+AS
+BEGIN
+    SELECT * FROM tipos_contenedor;
+END;
+GO
+
+EXEC sp_obtener_tipos_contenedor;
+
+IF OBJECT_ID('dbo.sp_obtener_ubicaciones_contenedor', 'P') IS NOT NULL
+DROP PROCEDURE sp_obtener_ubicaciones_contenedor;
+GO
+
+CREATE PROCEDURE sp_obtener_ubicaciones_contenedor
+AS
+BEGIN
+    SELECT * FROM ubicaciones_contenedor;
+END;
+GO
+
+EXEC sp_obtener_ubicaciones_contenedor;
+
+IF OBJECT_ID('dbo.sp_obtener_estatus_contenedor', 'P') IS NOT NULL
+DROP PROCEDURE sp_obtener_estatus_contenedor;
+GO
+
+CREATE PROCEDURE sp_obtener_estatus_contenedor
+AS
+BEGIN
+    SELECT * FROM estatus_contenedor;
+END;
+GO
+
+EXEC sp_obtener_estatus_contenedor;
+
+IF OBJECT_ID('dbo.sp_insertar_contenedor', 'P') IS NOT NULL
+DROP PROCEDURE sp_insertar_contenedor;
+GO
+
+CREATE PROCEDURE sp_insertar_contenedor
+    @nombre VARCHAR(32),
+    @id_tipo INT,
+    @id_ubicacion INT,
+    @id_estatus INT,
+    @id_contenedor INT OUTPUT -- Variable de salida para la ID
+AS
+BEGIN
+    INSERT INTO contenedores
+    (
+        nombre,
+        id_tipo,
+        id_ubicacion,
+        id_estatus
+    )
+    VALUES
+    (
+        @nombre,
+        @id_tipo,
+        @id_ubicacion,
+        @id_estatus
+    );
+
+    -- Capturar la ID generada
+    SET @id_contenedor = SCOPE_IDENTITY();
+END;
+GO
+
+EXEC sp_insertar_contenedor
+    @nombre = 'TANQUE T',
+    @id_tipo = 5,
+    @id_ubicacion = 5,
+    @id_estatus = 2;
+
+
+SELECT * FROM contenedores;
+SELECT * FROM estatus_contenedor;
