@@ -29,7 +29,7 @@ IF OBJECT_ID('dbo.sp_obtener_datos_contenedor', 'P') IS NOT NULL
 DROP PROCEDURE dbo.sp_obtener_datos_contenedor;
 GO
 
--- Create the stored procedure to get the data from one container
+-- Create the stored procedure to get the data from one container -- PARA VACIAR SOLO UN PROCEDURE O QUE NO TENGA NADA O QUE SEA LA PRIMER DE LA LISTA DE LIQUIDOS
 CREATE PROCEDURE sp_obtener_datos_contenedor
     @id_contenedor INT
 AS
@@ -1278,7 +1278,7 @@ EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 10;
 EXEC sp_obtener_estatus_liquidos;
 
 IF OBJECT_ID('dbo.sp_ obtener_tipos_contenedor', 'P') IS NOT NULL
-DROP PROCEDURE dbo.sp_obtener_tipos_contenddor;
+DROP PROCEDURE dbo.sp_obtener_tipos_contenedor;
 GO
 
 CREATE PROCEDURE sp_obtener_tipos_contenedor
@@ -1324,10 +1324,10 @@ CREATE PROCEDURE sp_insertar_contenedor
     @nombre VARCHAR(32),
     @id_tipo INT,
     @id_ubicacion INT,
-    @id_estatus INT,
-    @id_contenedor INT OUTPUT -- Variable de salida para la ID
+    @id_estatus INT
 AS
 BEGIN
+    -- Insertar el nuevo registro en la tabla 'contenedores'
     INSERT INTO contenedores
     (
         nombre,
@@ -1343,17 +1343,75 @@ BEGIN
         @id_estatus
     );
 
-    -- Capturar la ID generada
-    SET @id_contenedor = SCOPE_IDENTITY();
+    -- Devolver la ID del nuevo contenedor
+    SELECT SCOPE_IDENTITY() AS id_contenedor;
 END;
 GO
 
 EXEC sp_insertar_contenedor
-    @nombre = 'TANQUE T',
+    @nombre = 'TANQUE W',
     @id_tipo = 5,
     @id_ubicacion = 5,
     @id_estatus = 2;
 
+IF OBJECT_ID('dbo.sp_actualizar_estatus_contenedor', 'P') IS NOT NULL
+DROP PROCEDURE sp_actualizar_estatus_contenedor;
+GO
+
+CREATE PROCEDURE sp_actualizar_estatus_contenedor
+    @id_contenedor INT
+AS
+BEGIN
+    -- Crear una tabla temporal para almacenar los resultados del procedimiento
+    DECLARE @tempTable TABLE (
+        cantidad_luiquido_lts DECIMAL(18, 2),
+        capacidad_lts DECIMAL(18, 2),
+        codigo NVARCHAR(100),
+        descripcion NVARCHAR(255)
+    );
+
+    -- Insertar los datos del procedimiento en la tabla temporal
+    INSERT INTO @tempTable
+    EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = @id_contenedor;
+
+    -- Verificar si la cantidad de líquido es menor a 1
+    IF NOT EXISTS (SELECT 1 FROM @tempTable WHERE cantidad_luiquido_lts < 1)
+    BEGIN
+        -- Lanzar un error si la cantidad no es menor a 1
+        THROW 50000, 'La cantidad de líquido no es menor a 1 lts.', 1;
+    END;
+
+    -- Actualizar el estatus del contenedor directamente
+    UPDATE contenedores
+    SET id_estatus = 3
+    WHERE id_contenedor = @id_contenedor;
+END;
+GO
+
+EXEC sp_actualizar_estatus_contenedor @id_contenedor = 13;
+
+IF OBJECT_ID('dbo.sp_obtener_contenedores_disponibles', 'P') IS NOT NULL
+DROP PROCEDURE sp_obtener_contenedores_disponibles;
+GO
+
+CREATE PROCEDURE sp_obtener_contenedores_disponibles
+AS
+BEGIN
+    SELECT * FROM contenedores WHERE id_estatus < 3;
+END;
+GO
+
+EXEC sp_obtener_contenedores_disponibles;
 
 SELECT * FROM contenedores;
 SELECT * FROM estatus_contenedor;
+EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 13;
+EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 15;
+SELECT * FROM transacciones_liquido_contenedor;
+
+EXEC sp_insertar_producto_terminado 
+    @id_contenedor = 15,
+    @cantidad_terminada_lts = 850,
+    @persona_encargada = 'manolo@gmail.com';
+
+EXEC sp_obtener_datos_contenedor @id_contenedor = 10;
