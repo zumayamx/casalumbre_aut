@@ -1162,6 +1162,8 @@ CREATE PROCEDURE dbo.sp_obtener_datos_contenedor_liquido
 AS
 BEGIN
     SELECT TOP 1
+        t.id_liquido_contendor,
+        l.id_liquido,
         t.cantidad_liquido_lts,
         tc.capacidad_lts,
         l.codigo,
@@ -1397,7 +1399,7 @@ GO
 CREATE PROCEDURE sp_obtener_contenedores_disponibles
 AS
 BEGIN
-    SELECT * FROM contenedores WHERE id_estatus < 3;
+    SELECT * FROM contenedores WHERE id_estatus < 3 AND fecha_baja IS NULL;
 END;
 GO
 
@@ -1415,3 +1417,169 @@ EXEC sp_insertar_producto_terminado
     @persona_encargada = 'manolo@gmail.com';
 
 EXEC sp_obtener_datos_contenedor @id_contenedor = 10;
+
+DROP VIEW vw_obtener_datos_contenedor_liquido;
+GO
+CREATE VIEW vw_obtener_datos_contenedor_liquido
+AS
+WITH LiquidoOrdenado AS (
+    SELECT
+        t.id_contenedor,
+        l.id_liquido,
+        t.cantidad_liquido_lts,
+        tc.capacidad_lts,
+        l.codigo,
+        e.descripcion,
+        t.id_estatus,
+        ROW_NUMBER() OVER (PARTITION BY t.id_contenedor ORDER BY t.id_liquido_contendor DESC) AS rn
+    FROM
+        transacciones_liquido_contenedor t
+    JOIN
+        contenedores c ON c.id_contenedor = t.id_contenedor
+    JOIN
+        tipos_contenedor tc ON tc.id_tipo_contenedor = c.id_tipo
+    JOIN
+        liquidos l ON l.id_liquido = t.id_liquido
+    JOIN
+        estatus_liquido e ON e.id_estatus_liquido = t.id_estatus
+)
+SELECT
+    id_contenedor,
+    id_liquido,
+    cantidad_liquido_lts,
+    capacidad_lts,
+    codigo,
+    descripcion,
+    id_estatus
+FROM
+    LiquidoOrdenado
+WHERE
+    rn = 1; -- Nos quedamos solo con el registro más reciente por contenedor
+GO
+
+SELECT * FROM vw_obtener_datos_contenedor_liquido;
+
+IF OBJECT_ID('dbo.sp_obtener_contenedores_ex_nd', 'P') IS NOT NULL
+DROP PROCEDURE sp_obtener_contenedores_ex_nd;
+GO
+
+CREATE PROCEDURE sp_obtener_contenedores_ex_nd
+AS
+BEGIN
+    -- Seleccionamos todos los contenedores activos y hacemos un JOIN con la vista que contiene los datos del líquido
+    SELECT 
+        c.id_contenedor,
+        c.nombre,
+        c.id_tipo,
+        c.id_ubicacion,
+        c.fecha_alta,
+        c.fecha_baja,
+        c.id_estatus AS id_estatus_contenedor,
+        e.descripcion AS descripcion_estatus_contenedor,
+        l.id_liquido,
+        l.cantidad_liquido_lts,
+        l.capacidad_lts,
+        l.codigo,
+        l.descripcion AS descripcion_estatus_liquido,
+        l.id_estatus AS id_estatus_liquido
+    FROM 
+        contenedores c
+    JOIN
+        estatus_contenedor e ON c.id_estatus = e.id_estatus_contenedor
+    LEFT JOIN 
+        vw_obtener_datos_contenedor_liquido l
+    ON 
+        c.id_contenedor = l.id_contenedor
+    WHERE 
+        c.id_estatus <> 3
+        AND c.fecha_baja IS NULL;
+END;
+GO
+
+EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 10;
+
+EXEC sp_obtener_contenedores_ex_nd;
+
+SELECT * FROM contenedores;
+SELECT * FROM estatus_contenedor;
+SELECT * FROM transacciones_liquido_contenedor;
+SELECT * FROM estatus_liquido;
+SELECT * FROM liquidos;
+
+IF OBJECT_ID('dbo.sp_actualizar_estatus_contenedor', 'P') IS NOT NULL
+DROP PROCEDURE sp_actualizar_estatus_contenedor;
+GO
+
+CREATE PROCEDURE sp_actualizar_estatus_contenedor
+    @id_contenedor INT,
+    @id_nuevo_estatus INT
+AS
+BEGIN
+    UPDATE contenedores
+    SET id_estatus = @id_nuevo_estatus
+    WHERE id_contenedor = @id_contenedor;
+END;
+GO
+
+EXEC sp_actualizar_estatus_contenedor
+    @id_contenedor = 1,
+    @id_nuevo_estatus = 4;
+
+IF OBJECT_ID('dbo.sp_actualizar_estatus_liquido', 'P') IS NOT NULL
+DROP PROCEDURE sp_actualizar_estatus_liquido;
+GO
+
+CREATE PROCEDURE sp_actualizar_estatus_liquido
+    @id_contenedor INT,
+    @id_nuevo_estatus INT
+AS
+BEGIN
+    -- Creamos una tabla temporal para almacenar los resultados del procedimiento almacenado
+    CREATE TABLE #TempTable (
+        id_liquido_contendor INT,
+        id_liquido INT,
+        cantidad_liquido_lts DECIMAL(18, 2),
+        capacidad_lts DECIMAL(18, 2),
+        codigo VARCHAR(50),
+        descripcion VARCHAR(100)
+    );
+
+    -- Insertamos los resultados del procedimiento almacenado en la tabla temporal
+    INSERT INTO #TempTable
+    EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = @id_contenedor;
+
+    -- Declaramos una variable para almacenar el id_liquido_contendor
+    DECLARE @id_liquido_contendor INT;
+
+    -- Asignamos el valor de id_liquido_contendor desde la tabla temporal
+    SELECT TOP 1 @id_liquido_contendor = id_liquido_contendor FROM #TempTable;
+
+    -- Actualizamos el estatus en la tabla transacciones_liquido_contenedor
+    UPDATE
+        transacciones_liquido_contenedor
+    SET
+        id_estatus = @id_nuevo_estatus
+    WHERE
+        id_liquido_contendor = @id_liquido_contendor;
+
+    -- Eliminamos la tabla temporal
+    DROP TABLE #TempTable;
+END;
+GO
+
+EXEC sp_actualizar_estatus_liquido
+    @id_contenedor = 10,
+    @id_nuevo_estatus = 1;
+
+
+EXEC sp_obtener_contenedores_ex_nd;
+
+SELECT * FROM contenedores;
+SELECT * FROM estatus_contenedor;
+SELECT * FROM transacciones_liquido_contenedor;
+SELECT * FROM estatus_liquido;
+EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 6;
+
+
+EXEC sp_obtener_estatus_contenedor;
+EXEC sp_obtener_estatus_liquidos;
