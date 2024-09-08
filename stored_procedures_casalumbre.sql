@@ -480,6 +480,8 @@ GO
 -- Call the stored procedure
 EXEC sp_obtener_datos_liquido @id_liquido = 5;
 
+
+-- Drop the procedure if it exists
 IF OBJECT_ID('dbo.sp_insertar_liquido_combinado', 'P') IS NOT NULL
 DROP PROCEDURE dbo.sp_insertar_liquido_combinado;
 GO
@@ -913,162 +915,8 @@ EXEC sp_insertar_liquido_combinado
         }
         ]';
 
--- Drop procedure if exists
-IF OBJECT_ID('dbo.sp_obtener_trazabilidad_liquido', 'P') IS NOT NULL
-DROP PROCEDURE dbo.sp_obtener_trazabilidad_liquido;
-GO
 
-CREATE PROCEDURE sp_obtener_trazabilidad_liquido
-    @id_contenedor_b INT
-AS
-BEGIN
-    CREATE TABLE #TempTable (
-        id_liquido INT,
-        codigo_liquido VARCHAR(32),
-        cantidad_liquido_dentro_lts DECIMAL(18, 2),
-        ultimo_id_liquido_contenedor INT
-    );
-
-    INSERT INTO #TempTable
-    EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = @id_contenedor_b;
-
-    DECLARE @id_liquido_c INT;
-    SELECT @id_liquido_c = id_liquido FROM #TempTable;
-
-    WITH CTE_trazabilidad AS (
-        SELECT
-            t.id_combinacion,
-            l.fecha_produccion,
-            l.id_liquido AS id_liquido_combinado,
-            l.codigo AS codigo_liquido_combinado,
-            l.id_tipo AS tipo_liquido_combinado,
-            l.orden_produccion,
-            td.id_liquido AS id_liquido_componente,
-            lc.codigo AS codigo_componente,
-            lc.id_tipo AS tipo_componente,
-            td.cantidad_lts,
-            0 AS nivel
-        FROM 
-            combinaciones t
-        JOIN
-            combinaciones_detalle td ON t.id_combinacion = td.id_combinacion
-        JOIN
-            liquidos l ON t.id_liquido_combinado = l.id_liquido
-        JOIN
-            liquidos lc ON td.id_liquido = lc.id_liquido
-        WHERE
-            l.id_liquido = @id_liquido_c  -- Cambiado a @id_liquido_c
-        
-        UNION ALL
-
-        SELECT
-            t.id_combinacion,
-            l.fecha_produccion,
-            l.id_liquido AS id_liquido_combinado,
-            l.codigo AS codigo_liquido_combinado,
-            l.id_tipo AS tipo_liquido_combinado,
-            l.orden_produccion,
-            td.id_liquido AS id_liquido_componente,
-            lc.codigo AS codigo_componente,
-            lc.id_tipo AS tipo_componente,
-            td.cantidad_lts,
-            cte.nivel + 1
-        FROM
-            CTE_trazabilidad cte
-        JOIN
-            combinaciones t ON cte.id_liquido_componente = t.id_liquido_combinado
-        JOIN
-            combinaciones_detalle td ON t.id_combinacion = td.id_combinacion
-        JOIN
-            liquidos l ON t.id_liquido_combinado = l.id_liquido
-        JOIN
-            liquidos lc ON td.id_liquido = lc.id_liquido
-    )
-
-    SELECT *
-    FROM CTE_trazabilidad
-    ORDER BY nivel, id_combinacion, id_liquido_combinado, id_liquido_componente
-END;
-GO
-
-IF OBJECT_ID('dbo.sp_obtener_trazabilidad_liquido_c', 'P') IS NOT NULL
-DROP PROCEDURE dbo.sp_obtener_trazabilidad_liquido_c;
-GO
-
-CREATE PROCEDURE sp_obtener_trazabilidad_liquido_c
-    @id_contenedor INT
-AS
-BEGIN
-    CREATE TABLE #TempTable (
-        id_liquido INT,
-        codigo_liquido VARCHAR(32),
-        cantidad_liquido_dentro_lts DECIMAL(18, 2),
-        ultimo_id_liquido_contenedor INT
-    );
-
-    INSERT INTO #TempTable
-    EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = @id_contenedor;
-
-    DECLARE @id_liquido_c INT;
-    SELECT @id_liquido_c = id_liquido FROM #TempTable;
-
-    WITH CTE_trazabilidad AS (
-        -- Selecciona el líquido actual
-        SELECT
-            NULL AS id_combinacion,
-            l.fecha_produccion,
-            l.id_liquido AS id_liquido_combinado,
-            l.codigo AS codigo_liquido_combinado,
-            l.id_tipo AS tipo_liquido_combinado,
-            l.orden_produccion,
-            NULL AS id_liquido_componente,
-            CAST(NULL AS VARCHAR(32)) AS codigo_componente,  -- Corrección aquí
-            NULL AS tipo_componente,
-            l.cantidad_total_lts AS cantidad_lts,
-            0 AS nivel
-        FROM
-            liquidos l
-        WHERE
-            l.id_liquido = @id_liquido_c
-
-        UNION ALL
-
-        -- Selecciona los componentes del líquido actual y de sus combinaciones recursivamente
-        SELECT
-            t.id_combinacion,
-            l.fecha_produccion,
-            l.id_liquido AS id_liquido_combinado,
-            l.codigo AS codigo_liquido_combinado,
-            l.id_tipo AS tipo_liquido_combinado,
-            l.orden_produccion,
-            td.id_liquido AS id_liquido_componente,
-            lc.codigo AS codigo_componente,
-            lc.id_tipo AS tipo_componente,
-            td.cantidad_lts,
-            cte.nivel + 1
-        FROM
-            CTE_trazabilidad cte
-        JOIN
-            combinaciones t ON cte.id_liquido_combinado = t.id_liquido_combinado
-        JOIN
-            combinaciones_detalle td ON t.id_combinacion = td.id_combinacion
-        JOIN
-            liquidos l ON t.id_liquido_combinado = l.id_liquido
-        JOIN
-            liquidos lc ON td.id_liquido = lc.id_liquido
-    )
-
-    SELECT *
-    FROM CTE_trazabilidad
-    ORDER BY nivel, id_combinacion, id_liquido_combinado, id_liquido_componente;
-END;
-GO
-
-EXEC sp_obtener_trazabilidad_liquido @id_contenedor_b = 10;
-EXEC sp_obtener_trazabilidad_liquido_c @id_contenedor = 13;
-EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = 10;
-SELECT * FROM transacciones_liquido_contenedor;
-
+-- Drop the procedure if it exists
 IF OBJECT_ID('dbo.sp_obtener_trazabilidad_liquido_t', 'P') IS NOT NULL
 DROP PROCEDURE sp_obtener_trazabilidad_liquido_t;
 GO
@@ -1148,11 +996,9 @@ BEGIN
 END;
 GO
 
-EXEC sp_obtener_trazabilidad_liquido @id_contenedor_b = 10;
 EXEC sp_obtener_trazabilidad_liquido_t @id_contenedor_b = 13;
-SELECT * FROM transacciones_liquido_contenedor;
-SELECT * FROM liquidos;
 
+-- Drop the procedure if it exists
 IF OBJECT_ID('dbo.sp_obtener_datos_contenedor_liquido', 'P') IS NOT NULL
 DROP PROCEDURE dbo.sp_obtener_datos_contenedor_liquido;
 GO
@@ -1187,6 +1033,7 @@ GO
 
 EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 10;
 
+-- Drop the procedure if it exists
 IF OBJECT_ID('dbo.sp_insertar_producto_terminado', 'P') IS NOT NULL
 DROP PROCEDURE dbo.sp_insertar_producto_terminado;
 GO
@@ -1235,38 +1082,12 @@ BEGIN
 END;
 GO
 
-SELECT 
-    fk.name AS ForeignKeyName,
-    tp.name AS ParentTableName,
-    cp.name AS ParentColumnName,
-    tr.name AS ReferencedTableName,
-    cr.name AS ReferencedColumnName
-FROM 
-    sys.foreign_keys AS fk
-JOIN 
-    sys.foreign_key_columns AS fkc 
-    ON fk.object_id = fkc.constraint_object_id
-JOIN 
-    sys.tables AS tp 
-    ON fkc.parent_object_id = tp.object_id
-JOIN 
-    sys.columns AS cp 
-    ON fkc.parent_object_id = cp.object_id 
-    AND fkc.parent_column_id = cp.column_id
-JOIN 
-    sys.tables AS tr 
-    ON fkc.referenced_object_id = tr.object_id
-JOIN 
-    sys.columns AS cr 
-    ON fkc.referenced_object_id = cr.object_id 
-    AND fkc.referenced_column_id = cr.column_id
-WHERE 
-    fk.name = 'FK__combinaci__id_li__68336F3E';
+EXEC sp_insertar_producto_terminado 
+    @id_contenedor = 15,
+    @cantidad_terminada_lts = 850,
+    @persona_encargada = 'manolo@gmail.com';
 
-EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 10;
-
-EXEC sp_obtener_estatus_liquidos;
-
+-- Drop the procedure if it exists
 IF OBJECT_ID('dbo.sp_ obtener_tipos_contenedor', 'P') IS NOT NULL
 DROP PROCEDURE dbo.sp_obtener_tipos_contenedor;
 GO
@@ -1280,6 +1101,7 @@ GO
 
 EXEC sp_obtener_tipos_contenedor;
 
+-- Drop the procedure if it exists
 IF OBJECT_ID('dbo.sp_obtener_ubicaciones_contenedor', 'P') IS NOT NULL
 DROP PROCEDURE sp_obtener_ubicaciones_contenedor;
 GO
@@ -1293,6 +1115,7 @@ GO
 
 EXEC sp_obtener_ubicaciones_contenedor;
 
+-- Drop the procedure if it exists
 IF OBJECT_ID('dbo.sp_obtener_estatus_contenedor', 'P') IS NOT NULL
 DROP PROCEDURE sp_obtener_estatus_contenedor;
 GO
@@ -1306,6 +1129,7 @@ GO
 
 EXEC sp_obtener_estatus_contenedor;
 
+-- Drop the procedure if it exists
 IF OBJECT_ID('dbo.sp_insertar_contenedor', 'P') IS NOT NULL
 DROP PROCEDURE sp_insertar_contenedor;
 GO
@@ -1344,6 +1168,7 @@ EXEC sp_insertar_contenedor
     @id_ubicacion = 5,
     @id_estatus = 2;
 
+-- Drop the procedure if it exists
 IF OBJECT_ID('dbo.sp_actualizar_estatus_contenedor', 'P') IS NOT NULL
 DROP PROCEDURE sp_actualizar_estatus_contenedor;
 GO
@@ -1380,6 +1205,7 @@ GO
 
 EXEC sp_actualizar_estatus_contenedor @id_contenedor = 13;
 
+-- Drop the procedure if it exists
 IF OBJECT_ID('dbo.sp_obtener_contenedores_disponibles', 'P') IS NOT NULL
 DROP PROCEDURE sp_obtener_contenedores_disponibles;
 GO
@@ -1393,19 +1219,7 @@ GO
 
 EXEC sp_obtener_contenedores_disponibles;
 
-SELECT * FROM contenedores;
-SELECT * FROM estatus_contenedor;
-EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 13;
-EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 15;
-SELECT * FROM transacciones_liquido_contenedor;
-
-EXEC sp_insertar_producto_terminado 
-    @id_contenedor = 15,
-    @cantidad_terminada_lts = 850,
-    @persona_encargada = 'manolo@gmail.com';
-
-EXEC sp_obtener_datos_contenedor @id_contenedor = 10;
-
+-- Drop the procedure if it exists
 DROP VIEW vw_obtener_datos_contenedor_liquido;
 GO
 CREATE VIEW vw_obtener_datos_contenedor_liquido
@@ -1447,6 +1261,7 @@ GO
 
 SELECT * FROM vw_obtener_datos_contenedor_liquido;
 
+-- Drop the procedure if it exists
 IF OBJECT_ID('dbo.sp_obtener_contenedores_ex_nd', 'P') IS NOT NULL
 DROP PROCEDURE sp_obtener_contenedores_ex_nd;
 GO
@@ -1484,16 +1299,9 @@ BEGIN
 END;
 GO
 
-EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 10;
-
 EXEC sp_obtener_contenedores_ex_nd;
 
-SELECT * FROM contenedores;
-SELECT * FROM estatus_contenedor;
-SELECT * FROM transacciones_liquido_contenedor;
-SELECT * FROM estatus_liquido;
-SELECT * FROM liquidos;
-
+-- Drop the procedure if it exists
 IF OBJECT_ID('dbo.sp_actualizar_estatus_contenedor', 'P') IS NOT NULL
 DROP PROCEDURE sp_actualizar_estatus_contenedor;
 GO
@@ -1513,6 +1321,7 @@ EXEC sp_actualizar_estatus_contenedor
     @id_contenedor = 1,
     @id_nuevo_estatus = 4;
 
+-- Drop the procedure if it exists
 IF OBJECT_ID('dbo.sp_actualizar_estatus_liquido', 'P') IS NOT NULL
 DROP PROCEDURE sp_actualizar_estatus_liquido;
 GO
@@ -1559,37 +1368,4 @@ EXEC sp_actualizar_estatus_liquido
     @id_contenedor = 10,
     @id_nuevo_estatus = 1;
 
-
-EXEC sp_obtener_contenedores_ex_nd;
-
-SELECT * FROM contenedores;
-SELECT * FROM estatus_contenedor;
-SELECT * FROM transacciones_liquido_contenedor;
-SELECT * FROM estatus_liquido;
-EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 6;
-
-
-EXEC sp_obtener_estatus_contenedor;
-EXEC sp_obtener_estatus_liquidos;
-
-
 SELECT * FROM liquidos;
-SELECT * FROM proveedores;
-SELECT * FROM contenedores;
-SELECT * FROM transacciones_liquido_contenedor;
-SELECT * FROM combinaciones;
-SELECT * FROM combinaciones_detalle;
-SELECT * FROM estatus_contenedor;
-SELECT * FROM estatus_liquido;
-SELECT * FROM estatus_contenedor;
-SELECT * FROM tipos_contenedor;
-SELECT * FROM productos_terminados;
-
-EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 10;
-
-EXEC sp_obtener_trazabilidad_liquido_t @id_contenedor_b = 15;
-
-SELECT * FROM estatus_contenedor;
-SELECT * FROM liquidos;
-SELECT * FROM estatus_liquido;
-
