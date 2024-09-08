@@ -1235,18 +1235,6 @@ BEGIN
 END;
 GO
 
-SELECT * FROM liquidos;
-SELECT * FROM proveedores;
-SELECT * FROM contenedores;
-SELECT * FROM transacciones_liquido_contenedor;
-SELECT * FROM combinaciones;
-SELECT * FROM combinaciones_detalle;
-SELECT * FROM estatus_contenedor;
-SELECT * FROM estatus_liquido;
-SELECT * FROM estatus_contenedor;
-SELECT * FROM tipos_contenedor;
-SELECT * FROM productos_terminados;
-
 SELECT 
     fk.name AS ForeignKeyName,
     tp.name AS ParentTableName,
@@ -1583,3 +1571,25 @@ EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 6;
 
 EXEC sp_obtener_estatus_contenedor;
 EXEC sp_obtener_estatus_liquidos;
+
+
+SELECT * FROM liquidos;
+SELECT * FROM proveedores;
+SELECT * FROM contenedores;
+SELECT * FROM transacciones_liquido_contenedor;
+SELECT * FROM combinaciones;
+SELECT * FROM combinaciones_detalle;
+SELECT * FROM estatus_contenedor;
+SELECT * FROM estatus_liquido;
+SELECT * FROM estatus_contenedor;
+SELECT * FROM tipos_contenedor;
+SELECT * FROM productos_terminados;
+
+EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 10;
+
+EXEC sp_obtener_trazabilidad_liquido_t @id_contenedor_b = 15;
+
+SELECT * FROM estatus_contenedor;
+SELECT * FROM liquidos;
+SELECT * FROM estatus_liquido;
+
