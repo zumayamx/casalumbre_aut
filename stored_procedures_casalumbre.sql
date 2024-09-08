@@ -480,16 +480,14 @@ GO
 -- Call the stored procedure
 EXEC sp_obtener_datos_liquido @id_liquido = 5;
 
-
--- Drop the procedure if it exists
+-- Drop the procedure if it exists ------------------------------------------------------------------------------ TH
 IF OBJECT_ID('dbo.sp_insertar_liquido_combinado', 'P') IS NOT NULL
-DROP PROCEDURE dbo.sp_insertar_liquido_combinado;
+    DROP PROCEDURE dbo.sp_insertar_liquido_combinado_p;
 GO
 
-CREATE PROCEDURE sp_insertar_liquido_combinado
+CREATE PROCEDURE sp_insertar_liquido_combinado_p
     @nombre VARCHAR(32),
     @id_tipo INT,
-    @cantidad_generada_lts DECIMAL(10, 2),
     @id_proveedor INT,
     @metanol DECIMAL(10, 2),
     @alcoholes_sup DECIMAL(10, 2),
@@ -510,15 +508,45 @@ BEGIN
         DECLARE @id_liquido_combinado INT;
         DECLARE @id_combinacion INT;
         DECLARE @id_liquido_componente INT;
+        DECLARE @cantidad_total_componentes DECIMAL(10, 2) = 0;
+        DECLARE @cantidad_liquido_destino DECIMAL(10, 2);
+
+        -- Obtener la cantidad de líquido actual en el contenedor de destino
+        -- Creamos una tabla temporal para almacenar los resultados del procedimiento almacenado
+        CREATE TABLE #TempTable (
+            id_liquido_contendor INT,
+            id_liquido INT,
+            cantidad_liquido_lts DECIMAL(18, 2),
+            capacidad_lts DECIMAL(18, 2),
+            codigo VARCHAR(50),
+            descripcion VARCHAR(100)
+        );
+
+        -- Insertamos los resultados del procedimiento almacenado en la tabla temporal
+        INSERT INTO #TempTable
+        EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = @id_contenedor_destino;
+
+        SELECT @cantidad_liquido_destino = cantidad_liquido_lts
+        FROM #TempTable;
+
+        -- Calcular la cantidad total de los componentes del líquido
+        SELECT @cantidad_total_componentes = SUM(cantidad_liquido_componente_lts)
+        FROM OPENJSON(@composicion_liquidos_json)
+        WITH
+        (
+            id_contenedor_componente INT '$.id_contenedor_componente',
+            cantidad_liquido_componente_lts DECIMAL(10, 2) '$.cantidad_liquido_componente_lts'
+        );
+
+        -- Sumar la cantidad en el contenedor de destino a la cantidad total de componentes
+        DECLARE @cantidad_generada_lts DECIMAL(10, 2);
+        SET @cantidad_generada_lts = @cantidad_total_componentes + ISNULL(@cantidad_liquido_destino, 0);
 
         IF EXISTS (SELECT 1 FROM contenedores WHERE id_contenedor = @id_contenedor_destino AND id_estatus = 2)
         BEGIN
-            UPDATE
-                contenedores
-            SET
-                id_estatus = 1
-            WHERE
-                id_contenedor = @id_contenedor_destino;
+            UPDATE contenedores
+            SET id_estatus = 1
+            WHERE id_contenedor = @id_contenedor_destino;
         END
 
         -- Insertar el nuevo registro en la tabla liquidos
@@ -671,27 +699,26 @@ BEGIN
 END;
 GO
 
-EXEC sp_insertar_liquido_combinado
-    @nombre = 'LIQUIDO COMBINADO 7->19',
+EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 13;
+EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 11;
+SELECT * FROM transacciones_liquido_contenedor;
+
+EXEC sp_insertar_liquido_combinado_p
+    @nombre = 'LIQUIDO COMBINADO 11->13',
     @id_tipo = 2,
-    @cantidad_generada_lts = 1000.00,
     @id_proveedor = 3,
     @metanol = 10.15,
     @alcoholes_sup = 0.1,
     @porcentaje_alcohol_vol = 40.60,
     @orden_produccion = 1011,
     @id_estatus = 2,
-    @id_contenedor_destino = 12,
+    @id_contenedor_destino = 15,
     @persona_encargada = 'manolo@gmail.com',
     @composicion_liquidos_json = 
         N'[
         {
-            "id_contenedor_componente": 12,
-            "cantidad_liquido_componente_lts": 70.00
-        }, 
-        {
-            "id_contenedor_componente": 7,
-            "cantidad_liquido_componente_lts": 30.00
+            "id_contenedor_componente": 11,
+            "cantidad_liquido_componente_lts": 1000.00
         }
         ]';
 
@@ -1170,7 +1197,7 @@ EXEC sp_insertar_contenedor
 
 -- Drop the procedure if it exists
 IF OBJECT_ID('dbo.sp_actualizar_estatus_contenedor', 'P') IS NOT NULL
-DROP PROCEDURE sp_actualizar_estatus_contenedor;
+    DROP PROCEDURE sp_actualizar_estatus_contenedor;
 GO
 
 CREATE PROCEDURE sp_actualizar_estatus_contenedor
@@ -1193,7 +1220,8 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM @tempTable WHERE cantidad_luiquido_lts < 1)
     BEGIN
         -- Lanzar un error si la cantidad no es menor a 1
-        THROW 50000, 'La cantidad de líquido no es menor a 1 lts.', 1;
+        RAISERROR('La cantidad de líquido no es menor a 1 lts.', 16, 1);
+        RETURN;
     END;
 
     -- Actualizar el estatus del contenedor directamente
@@ -1369,3 +1397,27 @@ EXEC sp_actualizar_estatus_liquido
     @id_nuevo_estatus = 1;
 
 SELECT * FROM liquidos;
+SELECT * FROM transacciones_liquido_contenedor;
+
+EXEC sp_insertar_liquido_combinado
+    @nombre = 'PRUEBA D',
+    @id_tipo = 2,
+    @cantidad_generada_lts = 500.0,
+    @id_proveedor = 3,
+    @metanol = 20,
+    @alcoholes_sup = 10.30,
+    @porcentaje_alcohol_vol = 50.0,
+    @orden_produccion = 1045,
+    @id_estatus = 2,
+    @id_contenedor_destino = 13,
+    @persona_encargada = 'manolo@gmail.com',
+    @composicion_liquidos_json =
+        N'[
+        {
+            "id_contenedor_componente": 15,
+            "cantidad_liquido_componente_lts": 500.00
+        }
+        ]';
+
+EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 15;
+EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 13;
