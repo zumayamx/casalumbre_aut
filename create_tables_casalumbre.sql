@@ -171,3 +171,13 @@ CREATE TABLE combinaciones_detalle (
     FOREIGN KEY (id_combinacion) REFERENCES combinaciones(id_combinacion),
     FOREIGN KEY (id_liquido) REFERENCES liquidos(id_liquido)
 );
+
+-- Drop the table if it exists
+IF OBJECT_ID('dbo.liquidos_base_com', 'U') IS NOT NULL
+DROP TABLE dbo.liquidos_base_com;
+GO
+
+CREATE TABLE liquidos_base_com (
+    id_liquido INT NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    codigo VARCHAR(32) NOT NULL
+);

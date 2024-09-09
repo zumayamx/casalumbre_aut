@@ -119,4 +119,14 @@ INSERT INTO transacciones_liquido_contenedor (id_contenedor, id_liquido, cantida
 (4, 4, 400.00, 'User D', 2), -- Contenedor 4 (EN USO), Liquido 4 (not CUARENTENA)
 (5, 5, 350.00, 'User E', 2); -- Contenedor 5 (EN USO), Liquido 5 (not CUARENTENA)
 
------ REMEMBER ISERT DUMMY DATA INTO productos_teminados ------
+INSERT INTO liquidos_base_com (codigo) VALUES
+('ESPADÍN'),
+('TOBALÁ'),
+('MEZCAL DM'),
+('MEZCAL ODT'),
+('CABEZAS'),
+('CORAZON'),
+('COLAS'),
+('ORDINARIO'),
+('AGUA'),
+('MEZCAL A');

@@ -481,7 +481,7 @@ GO
 EXEC sp_obtener_datos_liquido @id_liquido = 5;
 
 -- Drop the procedure if it exists ------------------------------------------------------------------------------ TH
-IF OBJECT_ID('dbo.sp_insertar_liquido_combinado', 'P') IS NOT NULL
+IF OBJECT_ID('dbo.sp_insertar_liquido_combinado_p', 'P') IS NOT NULL
     DROP PROCEDURE dbo.sp_insertar_liquido_combinado_p;
 GO
 
@@ -699,9 +699,249 @@ BEGIN
 END;
 GO
 
-EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 13;
+IF OBJECT_ID('dbo.sp_insertar_liquido_combinado_c', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_insertar_liquido_combinado_c;
+GO
+
+CREATE PROCEDURE sp_insertar_liquido_combinado_c
+    @nombre VARCHAR(32),
+    @id_tipo INT,
+    @id_proveedor INT,
+    @metanol DECIMAL(10, 2),
+    @alcoholes_sup DECIMAL(10, 2),
+    @porcentaje_alcohol_vol DECIMAL(10, 2),
+    @orden_produccion INT,
+    @id_estatus INT,
+    @id_contenedor_destino INT,
+    @persona_encargada VARCHAR(32),
+    @composicion_liquidos_json NVARCHAR(MAX) -- This JSON contains data for each liquid component in the combined liquid
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Begin the transaction
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DECLARE @id_liquido_combinado INT;
+        DECLARE @id_combinacion INT;
+        DECLARE @id_liquido_componente INT;
+        DECLARE @cantidad_total_componentes DECIMAL(10, 2) = 0;
+        DECLARE @cantidad_liquido_destino DECIMAL(10, 2);
+
+        -- Obtener la cantidad de líquido actual en el contenedor de destino
+        CREATE TABLE #TempTable (
+            id_liquido_contendor INT,
+            id_liquido INT,
+            cantidad_liquido_lts DECIMAL(18, 2),
+            capacidad_lts DECIMAL(18, 2),
+            codigo VARCHAR(50),
+            descripcion VARCHAR(100)
+        );
+
+        -- Insertamos los resultados del procedimiento almacenado en la tabla temporal
+        INSERT INTO #TempTable
+        EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = @id_contenedor_destino;
+
+        SELECT @cantidad_liquido_destino = cantidad_liquido_lts
+        FROM #TempTable;
+
+        -- Calcular la cantidad total de los componentes del líquido
+        SELECT @cantidad_total_componentes = SUM(cantidad_liquido_componente_lts)
+        FROM OPENJSON(@composicion_liquidos_json)
+        WITH
+        (
+            id_contenedor_componente INT '$.id_contenedor_componente',
+            cantidad_liquido_componente_lts DECIMAL(10, 2) '$.cantidad_liquido_componente_lts'
+        );
+
+        -- Sumar la cantidad en el contenedor de destino a la cantidad total de componentes
+        DECLARE @cantidad_generada_lts DECIMAL(10, 2);
+        SET @cantidad_generada_lts = @cantidad_total_componentes + ISNULL(@cantidad_liquido_destino, 0);
+
+        IF EXISTS (SELECT 1 FROM contenedores WHERE id_contenedor = @id_contenedor_destino AND id_estatus = 2)
+        BEGIN
+            UPDATE contenedores
+            SET id_estatus = 1
+            WHERE id_contenedor = @id_contenedor_destino;
+        END
+
+        -- Insertar el nuevo registro en la tabla liquidos
+        INSERT INTO liquidos
+        (
+            codigo,
+            id_tipo,
+            cantidad_total_lts,
+            id_proveedor,
+            metanol,
+            alcoholes_sup,
+            porcentaje_alchol_vol,
+            orden_produccion
+        )
+        VALUES
+        (
+            @nombre,
+            @id_tipo,
+            @cantidad_generada_lts,
+            @id_proveedor,
+            @metanol,
+            @alcoholes_sup,
+            @porcentaje_alcohol_vol,
+            @orden_produccion
+        );
+
+        -- Retrieve the id_liquido_combinado of the liquid that was just inserted.
+        SET @id_liquido_combinado = SCOPE_IDENTITY();
+
+        -- Insert in combinaciones table
+        INSERT INTO combinaciones
+        (
+            id_liquido_combinado
+        )
+        VALUES
+        (
+            @id_liquido_combinado
+        );
+
+        SET @id_combinacion = SCOPE_IDENTITY();
+
+        -- Process the JSON to insert into combinaciones_detalle table
+        DECLARE @id_contenedor_componente INT;
+        DECLARE @cantidad_liquido_componente_lts DECIMAL(10, 2);
+
+        DECLARE cur CURSOR FOR
+        SELECT 
+            id_contenedor_componente,
+            cantidad_liquido_componente_lts
+        FROM 
+            OPENJSON(@composicion_liquidos_json)
+        WITH
+        (
+            id_contenedor_componente INT '$.id_contenedor_componente',
+            cantidad_liquido_componente_lts DECIMAL(10, 2) '$.cantidad_liquido_componente_lts'
+        );
+
+        OPEN cur;
+
+        FETCH NEXT FROM cur INTO @id_contenedor_componente, @cantidad_liquido_componente_lts;
+
+        WHILE @@FETCH_STATUS = 0
+        BEGIN
+            -- Crear una tabla temporal para almacenar el resultado de sp_obtener_datos_validos_liquido_contenedor
+            DECLARE @resultado TABLE (
+                id_liquido INT,
+                codigo_liquido VARCHAR(255), 
+                cantidad_liquido_dentro_lts DECIMAL(10, 2),
+                ultimo_id_liquido_contenedor INT
+            );
+
+            -- Insertar los resultados del procedimiento en la tabla temporal
+            INSERT INTO @resultado
+            EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = @id_contenedor_componente;
+
+            -- Obtener el id_liquido de la tabla temporal
+            SELECT @id_liquido_componente = id_liquido
+            FROM @resultado;
+
+            -- Verificar que el id_liquido_componente no sea NULL
+            IF @id_liquido_componente IS NULL
+            BEGIN
+                ROLLBACK TRANSACTION;
+                THROW 50001, 'Error: El id_liquido obtenido es NULL o no válido.', 1;
+            END
+
+            -- Insert into combinaciones_detalle
+            INSERT INTO combinaciones_detalle
+            (
+                id_combinacion,
+                id_liquido,
+                cantidad_lts
+            )
+            VALUES
+            (
+                @id_combinacion,
+                @id_liquido_componente,
+                @cantidad_liquido_componente_lts
+            );
+
+            -- Update the quantities in the containers
+            UPDATE 
+                t
+            SET 
+                t.cantidad_liquido_lts = t.cantidad_liquido_lts - @cantidad_liquido_componente_lts
+            FROM
+                transacciones_liquido_contenedor t
+            WHERE
+                t.id_contenedor = @id_contenedor_componente AND t.id_liquido = @id_liquido_componente;
+
+            -- Fetch the next component
+            FETCH NEXT FROM cur INTO @id_contenedor_componente, @cantidad_liquido_componente_lts;
+        END;
+
+        CLOSE cur;
+        DEALLOCATE cur;
+
+        -- Insert the combined liquid in the destination container
+        INSERT INTO transacciones_liquido_contenedor
+        (
+            id_contenedor,
+            id_liquido,
+            cantidad_liquido_lts,
+            persona_encargada,
+            id_estatus
+        )
+        VALUES
+        (
+            @id_contenedor_destino,
+            @id_liquido_combinado,
+            @cantidad_generada_lts,
+            @persona_encargada,
+            @id_estatus
+        );
+
+        -- Commit the transaction if everything is successful
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        -- If there is an error, rollback the transaction
+        ROLLBACK TRANSACTION;
+
+        -- Raise the error again to the caller
+        THROW;
+    END CATCH;
+END;
+GO
+
+EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 6;
+EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 8;
+EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 9;
+EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 10;
+
 EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 11;
 SELECT * FROM transacciones_liquido_contenedor;
+
+EXEC sp_insertar_liquido_combinado_c
+    @nombre = 'LIQUIDO COMBINADO 8->9->6',
+    @id_tipo = 2,
+    @id_proveedor = 3,
+    @metanol = 10.15,
+    @alcoholes_sup = 0.1,
+    @porcentaje_alcohol_vol = 40.60,
+    @orden_produccion = 1012,
+    @id_estatus = 2,
+    @id_contenedor_destino = 6,
+    @persona_encargada = 'manolo@gmail.com',
+    @composicion_liquidos_json = 
+        N'[
+        {
+            "id_contenedor_componente": 8,
+            "cantidad_liquido_componente_lts": 50.00
+        }, 
+        {
+            "id_contenedor_componente": 9,
+            "cantidad_liquido_componente_lts": 50.00
+        }
+        ]';
 
 EXEC sp_insertar_liquido_combinado_p
     @nombre = 'LIQUIDO COMBINADO 11->13',
@@ -746,10 +986,9 @@ EXEC sp_insertar_liquido_combinado
         }
         ]';
 
-EXEC sp_insertar_liquido_combinado
+EXEC sp_insertar_liquido_combinado_p
     @nombre = 'LIQUIDO COMBINADO 8->9->10',
     @id_tipo = 2,
-    @cantidad_generada_lts = 1050.00,
     @id_proveedor = 3,
     @metanol = 10.15,
     @alcoholes_sup = 0.1,
@@ -943,6 +1182,9 @@ EXEC sp_insertar_liquido_combinado
         ]';
 
 
+EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 13;
+EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = 13;
+
 -- Drop the procedure if it exists
 IF OBJECT_ID('dbo.sp_obtener_trazabilidad_liquido_t', 'P') IS NOT NULL
 DROP PROCEDURE sp_obtener_trazabilidad_liquido_t;
@@ -952,15 +1194,21 @@ CREATE PROCEDURE sp_obtener_trazabilidad_liquido_t
     @id_contenedor_b INT
 AS
 BEGIN
+    -- id_liquido INT,
+    --     codigo_liquido VARCHAR(32),
+    --     cantidad_liquido_dentro_lts DECIMAL(18, 2),
+    --     ultimo_id_liquido_contenedor INT
     CREATE TABLE #TempTable (
-        id_liquido INT,
-        codigo_liquido VARCHAR(32),
-        cantidad_liquido_dentro_lts DECIMAL(18, 2),
-        ultimo_id_liquido_contenedor INT
+       id_liquido_contendor INT, -- CAMBIAR EL NOMBRE DE ESTA COLUMNAAAAAAA ------------------------------------------------------------------
+       id_liquido INT,
+       cantidad_liquido_lts DECIMAL(18, 2),
+       capacidad_lts DECIMAL(18, 2),
+       codigo VARCHAR(32),
+       descripcion VARCHAR(32)
     );
 
     INSERT INTO #TempTable
-    EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = @id_contenedor_b;
+    EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = @id_contenedor_b;
 
     DECLARE @id_liquido_c INT;
     SELECT @id_liquido_c = id_liquido FROM #TempTable;
@@ -1024,6 +1272,12 @@ END;
 GO
 
 EXEC sp_obtener_trazabilidad_liquido_t @id_contenedor_b = 13;
+
+SELECT * FROM transacciones_liquido_contenedor;
+
+EXEC sp_actualizar_estatus_liquido 
+    @id_contenedor = 6, 
+    @id_nuevo_estatus = 4;
 
 -- Drop the procedure if it exists
 IF OBJECT_ID('dbo.sp_obtener_datos_contenedor_liquido', 'P') IS NOT NULL
@@ -1421,3 +1675,92 @@ EXEC sp_insertar_liquido_combinado
 
 EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 15;
 EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 13;
+
+
+IF OBJECT_ID('dbo.sp_obtener_liquidos_base', 'P') IS NOT NULL
+DROP PROCEDURE sp_obtener_liquidos_base;
+GO
+
+-- Drop procedure if exists
+CREATE PROCEDURE sp_obtener_liquidos_base
+AS
+BEGIN
+    SELECT * FROM liquidos_base_com;
+END;
+GO
+
+EXEC sp_obtener_liquidos_base;
+
+SELECT * FROM tipo_liquido;
+SELECT * FROM liquidos;
+SELECT * FROM liquidos_base_com;
+
+EXEC sp_obtener_datos_contenedor @id_contenedor = 13;
+EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 13;
+
+-- Drop the procedure if it exists
+IF OBJECT_ID('dbo.sp_obtener_datos_contenedor_vacio', 'P') IS NOT NULL
+DROP PROCEDURE dbo.sp_obtener_datos_contenedor_vacio;
+GO
+
+-- Create the stored procedure to get the data from one container -- PARA VACIAR SOLO UN PROCEDURE O QUE NO TENGA NADA O QUE SEA LA PRIMER DE LA LISTA DE LIQUIDOS
+CREATE PROCEDURE sp_obtener_datos_contenedor_vacio
+    @id_contenedor INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Verificar si el contenedor existe y es un contenedor con un estatus válido
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM contenedores 
+        WHERE id_contenedor = @id_contenedor
+          AND fecha_baja IS NULL
+          AND id_estatus < 3
+    )
+    BEGIN
+        RAISERROR('El contenedor con ID %d no existe o no está activo.', 16, 1, @id_contenedor);
+        RETURN;
+    END
+
+    -- Crear la tabla temporal para almacenar los resultados
+    CREATE TABLE #TempTable (
+        id_liquido_contenedor INT,
+        id_liquido INT,
+        cantidad_liquido_lts DECIMAL(18, 2),
+        capacidad_lts DECIMAL(18, 2),
+        codigo VARCHAR(50),
+        descripcion VARCHAR(100)
+    );
+
+    -- Insertar los resultados del procedimiento almacenado en la tabla temporal
+    INSERT INTO #TempTable
+    EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = @id_contenedor;
+
+    -- Verificar si la cantidad de líquido es 0 o NULL
+    IF EXISTS (
+        SELECT 1
+        FROM #TempTable
+        WHERE cantidad_liquido_lts > 0
+    )
+    BEGIN
+        RAISERROR('El contenedor con ID %d no está vacío.', 16, 1, @id_contenedor);
+        RETURN;
+    END
+
+    -- Si el contenedor está vacío o la cantidad es NULL, seleccionar los datos del contenedor
+    SELECT 
+        c.nombre,
+        c.id_estatus,
+        t.capacidad_lts -- Asumiendo que capacidad_lts está en la tabla tipos_contenedor
+    FROM 
+        contenedores c
+    JOIN 
+        tipos_contenedor t ON c.id_tipo = t.id_tipo_contenedor
+    WHERE 
+        c.id_contenedor = @id_contenedor
+        AND c.fecha_baja IS NULL
+        AND c.id_estatus < 3;
+
+END;
+GO
