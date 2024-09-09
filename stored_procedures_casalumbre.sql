@@ -1764,3 +1764,12 @@ BEGIN
 
 END;
 GO
+
+SELECT * FROM transacciones_liquido_contenedor;
+EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 15;
+EXEC sp_obtener_datos_contenedor_vacio @id_contenedor = 15;
+
+EXEC sp_insertar_producto_terminado 
+    @id_contenedor = 15,
+    @cantidad_terminada_lts = 2700,
+    @persona_encargada = 'manolo@gmail.com';
