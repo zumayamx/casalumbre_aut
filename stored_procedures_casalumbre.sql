@@ -1234,7 +1234,7 @@ BEGIN
             lc.codigo AS codigo_componente,
             lc.id_tipo AS tipo_componente,
             td.cantidad_lts,
-            0 AS nivel,
+            1 AS nivel,
             ROW_NUMBER() OVER (ORDER BY t.id_combinacion) AS traza  -- Asignar traza a nivel 0
         FROM 
             combinaciones t
@@ -1280,7 +1280,7 @@ BEGIN
 END;
 GO
 
-EXEC sp_obtener_trazabilidad_liquido_t @id_contenedor_b = 13;
+EXEC sp_obtener_trazabilidad_liquido_t @id_contenedor_b = 15;
 
 SELECT * FROM transacciones_liquido_contenedor;
 
@@ -1822,4 +1822,77 @@ EXEC sp_insertar_producto_terminado
     @persona_encargada = 'manolo@gmail.com';
 
 
+SELECT * FROM transacciones_liquido_contenedor;
+EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 15;
+EXEC sp_obtener_trazabilidad_liquido_t @id_contenedor_b = 15;
 
+SELECT * FROM combinaciones;
+
+IF OBJECT_ID('dbo.sp_obtener_info_contenedor_liquido', 'P') IS NOT NULL
+DROP PROCEDURE sp_obtener_info_contenedor_liquido;
+GO
+
+CREATE PROCEDURE sp_obtener_info_contenedor_liquido
+    @id_contenedor INT
+AS
+BEGIN
+    -- Validación para verificar si el contenedor existe
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM contenedores 
+        WHERE id_contenedor = @id_contenedor
+    )
+    BEGIN
+        -- Si el contenedor no existe, se lanza un error personalizado
+        RAISERROR('El contenedor con ID %d no existe.', 16, 1, @id_contenedor);
+        RETURN;
+    END
+
+    -- Validación para verificar si el contenedor está relacionado con algún líquido
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM transacciones_liquido_contenedor 
+        WHERE id_contenedor = @id_contenedor
+    )
+    BEGIN
+        -- Si el contenedor no está relacionado con ningún líquido, se lanza un error personalizado
+        RAISERROR('El contenedor con ID %d no está relacionado con ningún líquido.', 16, 1, @id_contenedor);
+        RETURN;
+    END
+
+    -- Si las validaciones pasan, continúa con la consulta
+    SELECT TOP 1
+        t.id_liquido_contendor,
+        t.id_estatus,
+        l.id_liquido,
+        l.cantidad_total_lts,
+        l.fecha_produccion,
+        l.orden_produccion,
+        t.cantidad_liquido_lts,
+        l.id_tipo,
+        tc.capacidad_lts,
+        l.codigo,
+        e.descripcion
+    FROM
+        transacciones_liquido_contenedor t
+    JOIN
+        contenedores c ON c.id_contenedor = t.id_contenedor
+    JOIN
+        tipos_contenedor tc ON tc.id_tipo_contenedor = c.id_tipo
+    JOIN
+        liquidos l ON l.id_liquido = t.id_liquido
+    JOIN
+        estatus_liquido e ON e.id_estatus_liquido = t.id_estatus
+    WHERE
+        c.id_contenedor = @id_contenedor
+    ORDER BY 
+        t.id_liquido_contendor DESC;
+END;
+GO
+
+EXEC sp_obtener_info_contenedor_liquido @id_contenedor = 15;
+EXEC sp_obtener_info_contenedor_liquido @id_contenedor = 9;
+
+SELECT * FROM liquidos;
+
+SELECT * FROM contenedores;
