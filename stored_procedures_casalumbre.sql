@@ -766,7 +766,7 @@ BEGIN
 
         -- Sumar la cantidad en el contenedor de destino a la cantidad total de componentes
         DECLARE @cantidad_generada_lts DECIMAL(10, 2);
-        SET @cantidad_generada_lts = @cantidad_total_componentes + ISNULL(@cantidad_liquido_destino, 0);
+        SET @cantidad_generada_lts = @cantidad_total_componentes
 
         IF EXISTS (SELECT 1 FROM contenedores WHERE id_contenedor = @id_contenedor_destino AND id_estatus = 2)
         BEGIN
@@ -1439,7 +1439,7 @@ EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 10;
 
 -- Drop the procedure if it exists
 IF OBJECT_ID('dbo.sp_insertar_producto_terminado', 'P') IS NOT NULL
-DROP PROCEDURE dbo.sp_insertar_producto_terminado;
+    DROP PROCEDURE dbo.sp_insertar_producto_terminado;
 GO
 
 CREATE PROCEDURE sp_insertar_producto_terminado
@@ -1448,8 +1448,9 @@ CREATE PROCEDURE sp_insertar_producto_terminado
     @persona_encargada VARCHAR(32)
 AS
 BEGIN
-    -- Variable para almacenar el id_liquido
+    -- Variable para almacenar el id_liquido y la cantidad actual de líquido
     DECLARE @id_liquido_dentro INT;
+    DECLARE @cantidad_restante_lts INT;
 
     -- Obtener el id_liquido más reciente del contenedor especificado
     SELECT TOP 1
@@ -1469,6 +1470,23 @@ BEGIN
     WHERE
         id_contenedor = @id_contenedor
         AND id_liquido = @id_liquido_dentro;
+
+    -- Obtener la cantidad restante después de la actualización
+    SELECT @cantidad_restante_lts = cantidad_liquido_lts
+    FROM 
+        transacciones_liquido_contenedor
+    WHERE
+        id_contenedor = @id_contenedor
+        AND id_liquido = @id_liquido_dentro;
+
+    -- Si la cantidad restante es igual a 0, actualizar el estado del contenedor
+    IF @cantidad_restante_lts = 0
+    BEGIN
+        -- Llamar al procedimiento almacenado para actualizar el estatus
+        EXEC sp_actualizar_estatus_contenedor 
+            @id_contenedor = @id_contenedor, 
+            @id_nuevo_estatus = 2;
+    END
 
     -- Insertar los datos en la tabla productos_terminados
     INSERT INTO productos_terminados
@@ -1620,7 +1638,7 @@ GO
 CREATE PROCEDURE sp_obtener_contenedores_disponibles
 AS
 BEGIN
-    SELECT * FROM contenedores WHERE id_estatus < 3 AND fecha_baja IS NULL;
+    SELECT * FROM contenedores WHERE id_estatus <> 3 AND fecha_baja IS NULL;
 END;
 GO
 
@@ -2016,3 +2034,74 @@ SELECT * FROM transacciones_liquido_contenedor;
 SELECT * FROM liquidos;
 
 EXEC sp_actualizar_estatus_liquido @id_contenedor = 6, @id_nuevo_estatus = 4;
+
+EXEC sp_obtener_datos_contenedor_vacio @id_contenedor = 6;
+
+EXEC sp_actualizar_estatus_contenedor @id_contenedor = 15, @id_nuevo_estatus  = 2;
+
+EXEC sp_obtener_datos_contenedor_vacio @id_contenedor = 15;
+
+SELECT * FROM transacciones_liquido_contenedor;
+
+EXEC sp_actualizar_estatus_liquido @id_contenedor = 15, @id_nuevo_estatus = 4;
+
+EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = 14;
+
+EXEC sp_obtener_datos_contenedor @id_contenedor = 14;
+
+EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 15;
+
+SELECT * FROM estatus_contenedor;
+
+SELECT * FROM contenedores;
+
+
+EXEC sp_insertar_producto_terminado 
+    @id_contenedor = 15,
+    @cantidad_terminada_lts = 50000,
+    @persona_encargada = 'manolo@gmail.com';
+
+IF OBJECT_ID('dbo.sp_eliminar_contenedor', 'P') IS NOT NULL
+    DROP PROCEDURE sp_eliminar_contenedor;
+GO
+
+CREATE PROCEDURE sp_eliminar_contenedor
+    @id_contenedor INT,
+    @id_nuevo_estatus INT
+AS
+BEGIN
+    -- Crear la tabla temporal para almacenar los resultados
+    CREATE TABLE #TempTable (
+        id_liquido_contenedor INT,
+        id_liquido INT,
+        cantidad_liquido_lts DECIMAL(18, 2),
+        capacidad_lts DECIMAL(18, 2),
+        codigo VARCHAR(50),
+        descripcion VARCHAR(100)
+    );
+
+    -- Insertar los resultados del procedimiento almacenado en la tabla temporal
+    INSERT INTO #TempTable
+    EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = @id_contenedor;
+
+    -- Verificar si la cantidad de líquido es mayor a 0 o no está definida
+    IF EXISTS (
+        SELECT 1
+        FROM #TempTable
+        WHERE ISNULL(cantidad_liquido_lts, 0) > 0
+    )
+    BEGIN
+        RAISERROR('El contenedor con ID %d no está vacío.', 16, 1, @id_contenedor);
+        RETURN;
+    END
+
+    -- Si el contenedor está vacío, actualizar el estatus
+    UPDATE contenedores
+    SET id_estatus = @id_nuevo_estatus,
+    fecha_baja = GETDATE()
+    WHERE id_contenedor = @id_contenedor;
+
+    -- Eliminar la tabla temporal
+    DROP TABLE #TempTable;
+END;
+GO
