@@ -2039,7 +2039,7 @@ EXEC sp_obtener_datos_contenedor_vacio @id_contenedor = 6;
 
 EXEC sp_actualizar_estatus_contenedor @id_contenedor = 15, @id_nuevo_estatus  = 2;
 
-EXEC sp_obtener_datos_contenedor_vacio @id_contenedor = 15;
+EXEC sp_obtener_datos_contenedor_vacio @id_contenedor = 14;
 
 SELECT * FROM transacciones_liquido_contenedor;
 
@@ -2105,3 +2105,15 @@ BEGIN
     DROP TABLE #TempTable;
 END;
 GO
+
+EXEC sp_obtener_datos_contenedor @id_contenedor = 14;
+
+SELECT * FROM liquidos;
+
+SELECT * FROM transacciones_liquido_contenedor;
+
+SELECT * FROM contenedores;
+
+EXEC sp_obtener_trazabilidad_liquido_t @id_contenedor_b = 7;
+
+SELECT * FROM combinaciones_detalle;
