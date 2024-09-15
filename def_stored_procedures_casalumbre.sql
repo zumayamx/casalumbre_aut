@@ -1,8 +1,9 @@
 -- Use this database;
 USE casalumbre_db;
 
-------------------------- PROCEDURES FOR ADD FUNCTION IN POWER APPS -------------------------------
--- Procedure to get all base liquids stored in liquidos_base_com
+------------------------- PROCEDIMIENTOS ALMACENADOS PARA LA FUNCIÓN AÑADIR EN POWER APPS -------------------------------
+
+-- Procedimiento para obtener todos los liquidos base más solicitados
 IF OBJECT_ID('dbo.sp_obtener_liquidos_base', 'P') IS NOT NULL
 DROP PROCEDURE sp_obtener_liquidos_base;
 GO
@@ -19,12 +20,11 @@ GO
 
 
 
--- Procedure to get data if a container is empty
+-- Procecimiento para obtener los datos de un contenedor si este esta vacío
 IF OBJECT_ID('dbo.sp_obtener_datos_contenedor_vacio', 'P') IS NOT NULL
 DROP PROCEDURE dbo.sp_obtener_datos_contenedor_vacio;
 GO
 
--- Create the stored procedure to get the data from one container -- PARA VACIAR SOLO UN PROCEDURE O QUE NO TENGA NADA O QUE SEA LA PRIMER DE LA LISTA DE LIQUIDOS
 CREATE PROCEDURE sp_obtener_datos_contenedor_vacio
     @id_contenedor INT
 AS
@@ -91,12 +91,11 @@ GO
 
 
 
--- Drop the procedure if it exists
+-- Procedimeinto para insertar un nuevo liquido
 IF OBJECT_ID('dbo.sp_insertar_liquido', 'P') IS NOT NULL
     DROP PROCEDURE dbo.sp_insertar_liquido;
 GO
 
--- Create procedure to insert a new liquid in liquidos table
 CREATE PROCEDURE sp_insertar_liquido
     @codigo VARCHAR(32),
     @id_tipo INT,
@@ -110,7 +109,6 @@ AS
 BEGIN
     DECLARE @id_nuevo_liquido INT;
 
-    -- Insert new liquid in liquidos table
     INSERT INTO liquidos
     (
         codigo,
@@ -134,10 +132,9 @@ BEGIN
         @orden_produccion
     );
     
-    -- Get the last inserted ID
+    -- Obtener la ID que se le acaba de asignar al liquido
     SET @id_nuevo_liquido = SCOPE_IDENTITY();
 
-    -- Return the newly inserted ID
     SELECT @id_nuevo_liquido AS id_nuevo_liquido;
 END;
 GO
@@ -146,8 +143,8 @@ GO
 
 
 
-------------------------- PROCEDURES FOR TRANSACTION FUNCTION IN POWER APPS -------------------------------
--- Drop the procedure if exists
+-- Procedimiento para isertar una nueva transacción de un liquido a un contenedor
+-- Este procedimiento también es usado en la función transferir de Power Apps
 IF OBJECT_ID('dbo.sp_insertar_transaccion_liquido_contenedor', 'P') IS NOT NULL
 DROP PROCEDURE dbo.sp_insertar_transaccion_liquido_contenedor;
 GO
@@ -161,10 +158,10 @@ CREATE PROCEDURE sp_insertar_transaccion_liquido_contenedor
 AS
 BEGIN
     BEGIN TRY
-        -- Start a transaction
+        -- Iniciar la transacción
         BEGIN TRANSACTION;
 
-        -- Validación: verificar si el contenedor de destino es válido
+        -- Verificar si el contenedor de destino es válido
         IF NOT EXISTS (
             SELECT 1 
             FROM contenedores 
@@ -204,13 +201,13 @@ BEGIN
         WHERE
             id_contenedor = @id_contenedor_destino;
 
-        -- Commit the transaction
+        -- Confirmar la transacción
         COMMIT TRANSACTION;
     END TRY
     BEGIN CATCH
-        -- Rollback the transaction if an error occurs
+        -- Deshacer lo anterior si ocurre un error
         ROLLBACK TRANSACTION;
-        -- Re-throw the error to the caller
+        -- Lanzar el error
         THROW;
     END CATCH;
 END;
@@ -219,13 +216,14 @@ GO
 
 
 
+------------------------- PROCEDIMINETOS ALMACENADOS PARA LA FUNCIÓN TRANSFERIR EN POWER APPS  -------------------------------
 
--- Drop the procedure if it exists -- USED IN EXIT FUNCTION TOO
+-- Obtener los datos de un liquido dentro de un contenedor si este es válido
+-- Este procedimeinto también es usado en la función de salida de producto en Power Apps
 IF OBJECT_ID('dbo.sp_obtener_datos_validos_liquido_contenedor', 'P') IS NOT NULL
 DROP PROCEDURE dbo.sp_obtener_datos_validos_liquido_contenedor;
 GO
 
--- Create procedure to validate a liquid in a container
 CREATE PROCEDURE sp_obtener_datos_validos_liquido_contenedor
     @id_contenedor INT
 AS
@@ -276,21 +274,18 @@ GO
 
 
 
--- Drop the procedure if it exists -- USED IN EXIT FUNCTION TOO
+-- Procedimiento para obtener datos de un contenedor si esta activo
 IF OBJECT_ID('dbo.sp_obtener_datos_contenedor', 'P') IS NOT NULL
 DROP PROCEDURE dbo.sp_obtener_datos_contenedor;
 GO
 
--- Create the stored procedure to get the data from one container -- PARA VACIAR SOLO UN PROCEDURE O QUE NO TENGA NADA O QUE SEA LA PRIMER DE LA LISTA DE LIQUIDOS
 CREATE PROCEDURE sp_obtener_datos_contenedor
     @id_contenedor INT
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    -- Select nombre and capacidad_lts from contenedores table
-    -- Join with tipos_contenedor to get the capacity
-        -- Verificar si el contenedor existe
+    -- Verificar si el contenedor existe y si esta activo
     IF NOT EXISTS (
         SELECT 1 
         FROM contenedores 
@@ -303,12 +298,10 @@ BEGIN
         RETURN;
     END
 
-    -- Select nombre and capacidad_lts from contenedores table
-    -- Join with tipos_contenedor to get the capacity
     SELECT 
         c.nombre,
         c.id_estatus,
-        t.capacidad_lts -- Assuming capacidad_lts is the capacity column in tipos_contenedor
+        t.capacidad_lts
     FROM 
         contenedores c
     JOIN 
@@ -324,12 +317,11 @@ GO
 
 
 
--- Drop the procedure if it exists
+-- Procedimiento para insertar una transferencia de un liquido a otro contendor, es decir solo pasar un liquido a otro contenedor
 IF OBJECT_ID('dbo.sp_insertar_transferencia_liquido_contenedor', 'P') IS NOT NULL
 DROP PROCEDURE dbo.sp_insertar_transferencia_liquido_contenedor;
 GO
 
--- Create stored procedure to insert a transaction in liquido_contenedor table
 CREATE PROCEDURE sp_insertar_transferencia_liquido_contenedor
     @id_contenedor_origen INT,
     @id_contenedor_destino INT,
@@ -340,7 +332,7 @@ CREATE PROCEDURE sp_insertar_transferencia_liquido_contenedor
 AS
 BEGIN
     BEGIN TRY
-        -- Start a transaction
+        -- Iniciar transferencia
         BEGIN TRANSACTION;
         
         -- Insert into transacciones_liquido_contenedor
@@ -361,7 +353,7 @@ BEGIN
             @id_estatus_liquido
         );
 
-        -- Check if the destination container exists before attempting the update
+        -- Verificar si el contendor destino existe, si es así actualizar su estado a (EN USO, id_estatus = 1)
         IF EXISTS (SELECT 1 FROM contenedores WHERE id_contenedor = @id_contenedor_destino)
         BEGIN
             UPDATE
@@ -378,10 +370,10 @@ BEGIN
             RETURN;
         END;
 
-        -- Check if the origin container and liquid exists before attempting the update
+        -- Verificar si el contenedor origen existe y tiene un líqudo para transferir
         IF EXISTS (SELECT 1 FROM transacciones_liquido_contenedor WHERE id_contenedor = @id_contenedor_origen AND id_liquido = @id_liquido)
         BEGIN
-            -- Update the quantity of liquid in the origin container
+            -- Actualizar la cantidad de líquido en el contenedor origen
             UPDATE
                 transacciones_liquido_contenedor
             SET
@@ -390,7 +382,7 @@ BEGIN
                 id_contenedor = @id_contenedor_origen
                 AND id_liquido = @id_liquido;
 
-            -- Ensure the update was successful (no negative quantities)
+            -- Asegurarse que el contenedor origen no se queda con una cantidad negativa
             IF (SELECT cantidad_liquido_lts FROM transacciones_liquido_contenedor WHERE id_contenedor = @id_contenedor_origen AND id_liquido = @id_liquido) < 0
             BEGIN
                 RAISERROR('La cantidad de líquido en el contenedor de origen no puede ser negativa.', 16, 1);
@@ -405,13 +397,13 @@ BEGIN
             RETURN;
         END;
 
-        -- Commit the transaction if everything is successful
+        -- Confirmar si la transacción fue exitosa
         COMMIT TRANSACTION;
     END TRY
     BEGIN CATCH
-        -- Rollback the transaction if an error occurs
+        -- Deshacer todo lo anterior si ocurre un error
         ROLLBACK TRANSACTION;
-        -- Re-throw the error to the caller
+        -- Lanzar el error
         THROW;
     END CATCH;
 END;
@@ -420,7 +412,9 @@ GO
 
 
 
-
+-- Procedimiento para insertar un líquido combinado, es decir cuando se juntan dos o más líquidos ALFA (ID: 1) O BETA (ID: 2)
+-- Este es el procedimiento más importante hasta el momento, se encarga de la logica principal para obtener la trazabilidad posteriormente
+-- Se recomineda tener al menos una versión estable de este antes de realizar modificaciones
 IF OBJECT_ID('dbo.sp_insertar_liquido_combinado_c', 'P') IS NOT NULL
     DROP PROCEDURE dbo.sp_insertar_liquido_combinado_c;
 GO
@@ -436,12 +430,13 @@ CREATE PROCEDURE sp_insertar_liquido_combinado_c
     @id_estatus INT,
     @id_contenedor_destino INT,
     @persona_encargada VARCHAR(32),
-    @composicion_liquidos_json NVARCHAR(MAX) -- This JSON contains data for each liquid component in the combined liquid
+    -- JSON: Contiene la ID y cantidad_lts de cada líquido componenete con el que fue hecho un líquido combinado
+    @composicion_liquidos_json NVARCHAR(MAX)
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    -- Begin the transaction
+    -- Iniciar la transacción, e intentar realizar los procedimientos
     BEGIN TRY
         BEGIN TRANSACTION;
 
@@ -449,26 +444,8 @@ BEGIN
         DECLARE @id_combinacion INT;
         DECLARE @id_liquido_componente INT;
         DECLARE @cantidad_total_componentes DECIMAL(10, 2) = 0;
-        DECLARE @cantidad_liquido_destino DECIMAL(10, 2);
 
-        -- Obtener la cantidad de líquido actual en el contenedor de destino
-        CREATE TABLE #TempTable (
-            id_liquido_contendor INT,
-            id_liquido INT,
-            cantidad_liquido_lts DECIMAL(18, 2),
-            capacidad_lts DECIMAL(18, 2),
-            codigo VARCHAR(50),
-            descripcion VARCHAR(100)
-        );
-
-        -- Insertamos los resultados del procedimiento almacenado en la tabla temporal
-        INSERT INTO #TempTable
-        EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = @id_contenedor_destino;
-
-        SELECT @cantidad_liquido_destino = cantidad_liquido_lts
-        FROM #TempTable;
-
-        -- Calcular la cantidad total de los componentes del líquido
+        -- Calcular la cantidad total de los componentes del líquido en litros
         SELECT @cantidad_total_componentes = SUM(cantidad_liquido_componente_lts)
         FROM OPENJSON(@composicion_liquidos_json)
         WITH
@@ -481,6 +458,7 @@ BEGIN
         DECLARE @cantidad_generada_lts DECIMAL(10, 2);
         SET @cantidad_generada_lts = @cantidad_total_componentes
 
+        -- Verificar solo si el contenedor destino esta vacío (DISPONIBLE, id_estatus = 2) y actualizar a (EN USO, id_estatus = 1)
         IF EXISTS (SELECT 1 FROM contenedores WHERE id_contenedor = @id_contenedor_destino AND id_estatus = 2)
         BEGIN
             UPDATE contenedores
@@ -512,10 +490,10 @@ BEGIN
             @orden_produccion
         );
 
-        -- Retrieve the id_liquido_combinado of the liquid that was just inserted.
+        -- Obtener el ID del nuevo líquido (combinado) que acaba de ser insertado
         SET @id_liquido_combinado = SCOPE_IDENTITY();
 
-        -- Insert in combinaciones table
+        -- Insertar en la tabla combinaciones
         INSERT INTO combinaciones
         (
             id_liquido_combinado
@@ -525,12 +503,14 @@ BEGIN
             @id_liquido_combinado
         );
 
+        -- Obtener el ID de la combinación del nuevo líquido
         SET @id_combinacion = SCOPE_IDENTITY();
 
-        -- Process the JSON to insert into combinaciones_detalle table
+        -- Procesar el JSON dentro de la tabla combinaciones_detalle
         DECLARE @id_contenedor_componente INT;
         DECLARE @cantidad_liquido_componente_lts DECIMAL(10, 2);
 
+        -- Declarar un bucle para recorrer cada elemento del JSON
         DECLARE cur CURSOR FOR
         SELECT 
             id_contenedor_componente,
@@ -545,8 +525,10 @@ BEGIN
 
         OPEN cur;
 
+        -- Asignar cada elemento del JSON a una variable
         FETCH NEXT FROM cur INTO @id_contenedor_componente, @cantidad_liquido_componente_lts;
 
+        -- Por cada elemento en JSON verificar si el contenedor tiene un líquido válido
         WHILE @@FETCH_STATUS = 0
         BEGIN
             -- Crear una tabla temporal para almacenar el resultado de sp_obtener_datos_validos_liquido_contenedor
@@ -557,22 +539,22 @@ BEGIN
                 ultimo_id_liquido_contenedor INT
             );
 
-            -- Insertar los resultados del procedimiento en la tabla temporal
+            -- Insertar los resultados del procedimiento en la tabla temporal, usando el ID de cada contenedor_componente en el JSON
             INSERT INTO @resultado
             EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = @id_contenedor_componente;
 
-            -- Obtener el id_liquido de la tabla temporal
+            -- Obtener el ID del líquido de la tabla temporal
             SELECT @id_liquido_componente = id_liquido
             FROM @resultado;
 
-            -- Verificar que el id_liquido_componente no sea NULL
+            -- Verificar que el ID del líquido componente no sea NULL
             IF @id_liquido_componente IS NULL
             BEGIN
                 ROLLBACK TRANSACTION;
                 THROW 50001, 'Error: El id_liquido obtenido es NULL o no válido.', 1;
             END
 
-            -- Insert into combinaciones_detalle
+            -- Insertar dentro de la tabla combinaciones_detalle
             INSERT INTO combinaciones_detalle
             (
                 id_combinacion,
@@ -581,12 +563,15 @@ BEGIN
             )
             VALUES
             (
+                -- ID de la combinación asignado y obtenido anteriormente
                 @id_combinacion,
+                -- ID del líquido componente
                 @id_liquido_componente,
+                -- Cantidad de ese líquido componente en litros
                 @cantidad_liquido_componente_lts
             );
 
-            -- Update the quantities in the containers
+            -- Actualizar las cantidades en los contenedores de cada componenete
             UPDATE 
                 t
             SET 
@@ -596,14 +581,15 @@ BEGIN
             WHERE
                 t.id_contenedor = @id_contenedor_componente AND t.id_liquido = @id_liquido_componente;
 
-            -- Fetch the next component
+            -- Obener el siguiente componente
             FETCH NEXT FROM cur INTO @id_contenedor_componente, @cantidad_liquido_componente_lts;
         END;
 
+        -- Cerrar y liberar la memoria del bucle
         CLOSE cur;
         DEALLOCATE cur;
 
-        -- Insert the combined liquid in the destination container
+        -- Insertar la relación (transacción) entre el contenedor destino y el nuevo líquido
         INSERT INTO transacciones_liquido_contenedor
         (
             id_contenedor,
@@ -621,14 +607,14 @@ BEGIN
             @id_estatus
         );
 
-        -- Commit the transaction if everything is successful
+        -- Confirmar la transacción si todo salio bien
         COMMIT TRANSACTION;
     END TRY
     BEGIN CATCH
-        -- If there is an error, rollback the transaction
+        -- Deshacer todo lo anterior si ocurre un error
         ROLLBACK TRANSACTION;
 
-        -- Raise the error again to the caller
+        -- Lanzar el error
         THROW;
     END CATCH;
 END;
@@ -638,17 +624,15 @@ GO
 
 
 
--- Drop the procedure if it exists
+-- Procedimiento para obtener los estados de un líquido
 IF OBJECT_ID('dbo.sp_obtener_estatus_liquidos', 'P') IS NOT NULL
 DROP PROCEDURE dbo.sp_obtener_estatus_liquidos;
 GO
 
--- Create stored procedure to get the status of liquids
 CREATE PROCEDURE sp_obtener_estatus_liquidos
 AS
 BEGIN
     SET NOCOUNT ON;
-    -- Select descripcion from estatus_liquido table
     SELECT * FROM estatus_liquido;
 END;
 GO
@@ -657,8 +641,9 @@ GO
 
 
 
-------------------------- PROCEDURES FOR INSPECT FUNCTION IN POWER APPS -------------------------------
+------------------------- PROCEDIMIENTOS ALMACENADOS PARA LA FUNCIÓN INSPECCIONAR EN POWER APPS -------------------------------
 
+-- Procedimiento para obtener la información de un líquido dentro de un contenedor, solo si este esta relacionado con algún líquido
 IF OBJECT_ID('dbo.sp_obtener_info_contenedor_liquido', 'P') IS NOT NULL
 DROP PROCEDURE sp_obtener_info_contenedor_liquido;
 GO
@@ -691,7 +676,7 @@ BEGIN
         RETURN;
     END
 
-    -- Si las validaciones pasan, continúa con la consulta
+    -- Seleccionar la información actual del líquido que se encuentra dentro del contenedor
     SELECT TOP 1
         t.id_liquido_contendor,
         t.id_estatus,
@@ -725,21 +710,19 @@ GO
 
 
 
--- Drop the procedure if it exists
-IF OBJECT_ID('dbo.sp_obtener_trazabilidad_liquido_t', 'P') IS NOT NULL
-DROP PROCEDURE sp_obtener_trazabilidad_liquido_t;
+-- Procedimiento almacenado para obtener la trazabilidad de un líquido
+IF OBJECT_ID('dbo.sp_obtener_trazabilidad_liquido', 'P') IS NOT NULL
+DROP PROCEDURE sp_obtener_trazabilidad_liquido;
 GO
 
-CREATE PROCEDURE sp_obtener_trazabilidad_liquido_t
-    @id_contenedor_b INT
+CREATE PROCEDURE sp_obtener_trazabilidad_liquido
+    @id_contenedor INT
 AS
 BEGIN
-    -- id_liquido INT,
-    --     codigo_liquido VARCHAR(32),
-    --     cantidad_liquido_dentro_lts DECIMAL(18, 2),
-    --     ultimo_id_liquido_contenedor INT
+    -- Crear tabla temporar para guardar los datos del procedimeinto almacenado sp_obtener_datos_contenedor_liquido
+    -- Obtener el ID de líquido actual dentro del contenedor
     CREATE TABLE #TempTable (
-       id_liquido_contendor INT, -- CAMBIAR EL NOMBRE DE ESTA COLUMNAAAAAAA ------------------------------------------------------------------
+       id_liquido_contenedor INT,
        id_liquido INT,
        cantidad_liquido_lts DECIMAL(18, 2),
        capacidad_lts DECIMAL(18, 2),
@@ -748,10 +731,10 @@ BEGIN
     );
 
     INSERT INTO #TempTable
-    EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = @id_contenedor_b;
+    EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = @id_contenedor;
 
-    DECLARE @id_liquido_c INT;
-    SELECT @id_liquido_c = id_liquido FROM #TempTable;
+    DECLARE @id_liquido_b INT;
+    SELECT @id_liquido_b = id_liquido FROM #TempTable;
 
     WITH CTE_trazabilidad AS (
         SELECT
@@ -766,7 +749,7 @@ BEGIN
             lc.id_tipo AS tipo_componente,
             td.cantidad_lts,
             1 AS nivel,
-            ROW_NUMBER() OVER (ORDER BY t.id_combinacion) AS traza  -- Asignar traza a nivel 0
+            ROW_NUMBER() OVER (ORDER BY t.id_combinacion) AS traza  -- Asignar traza a nivel 1
         FROM 
             combinaciones t
         JOIN
@@ -776,7 +759,7 @@ BEGIN
         JOIN
             liquidos lc ON td.id_liquido = lc.id_liquido
         WHERE
-            l.id_liquido = @id_liquido_c  -- Cambiado a @id_liquido_c
+            l.id_liquido = @id_liquido_b 
         
         UNION ALL
 
@@ -815,7 +798,7 @@ GO
 
 
 
--- Drop the procedure if it exists
+-- Procedimiento almacenado para obtener los datos de un líquido dentro de un contenedor, sin ninguna válidación
 IF OBJECT_ID('dbo.sp_obtener_datos_contenedor_liquido', 'P') IS NOT NULL
 DROP PROCEDURE dbo.sp_obtener_datos_contenedor_liquido;
 GO
@@ -851,8 +834,9 @@ GO
 
 
 
-------------------------- PROCEDURES FOR EXIT PRODUCT FUNCTION IN POWER APPS -------------------------------
--- Drop the procedure if it exists
+------------------------- PROCEDIMINETOS ALMACENADOS PARA LA FUNCIÓN SALIDA DE PRODUCTO EN POWER APPS -------------------------------
+
+-- Procedimiento almacenado para insertar un producto termiando
 IF OBJECT_ID('dbo.sp_insertar_producto_terminado', 'P') IS NOT NULL
     DROP PROCEDURE dbo.sp_insertar_producto_terminado;
 GO
@@ -923,8 +907,9 @@ GO
 
 
 
-------------------------- PROCEDURES FOR ADMIN HOLDERS FUNCTION IN POWER APPS -------------------------------
--- Drop the procedure if it exists
+------------------------- PROCEDIMIENTOS ALMACENADOS PARA LA FUNCIÓN ADMINISTRAR CONTENEDORES DE POWER APPS  -------------------------------
+
+-- Procedimiento para registrar un nuevo contenedor
 IF OBJECT_ID('dbo.sp_insertar_contenedor', 'P') IS NOT NULL
 DROP PROCEDURE sp_insertar_contenedor;
 GO
@@ -936,7 +921,7 @@ CREATE PROCEDURE sp_insertar_contenedor
     @id_estatus INT
 AS
 BEGIN
-    -- Insertar el nuevo registro en la tabla 'contenedores'
+    -- Insertar el nuevo registro en la tabla contenedores
     INSERT INTO contenedores
     (
         nombre,
@@ -952,7 +937,7 @@ BEGIN
         @id_estatus
     );
 
-    -- Devolver la ID del nuevo contenedor
+    -- Obtener el ID del contenedor nuevo (acaba de ser insertado)
     SELECT SCOPE_IDENTITY() AS id_contenedor;
 END;
 GO
@@ -961,7 +946,7 @@ GO
 
 
 
--- Drop the procedure if it exists
+-- Procedimiento para obtener los tipos de los contenedor, estos definen su capacidad
 IF OBJECT_ID('dbo.sp_ obtener_tipos_contenedor', 'P') IS NOT NULL
 DROP PROCEDURE dbo.sp_obtener_tipos_contenedor;
 GO
@@ -977,7 +962,7 @@ GO
 
 
 
--- Drop the procedure if it exists
+-- Procedimiento para obtener los estados de los contenedores
 IF OBJECT_ID('dbo.sp_obtener_estatus_contenedor', 'P') IS NOT NULL
 DROP PROCEDURE sp_obtener_estatus_contenedor;
 GO
@@ -993,7 +978,7 @@ GO
 
 
 
--- Drop the procedure if it exists
+-- Procedimiento para obtener las ubicaciones de los contenedores
 IF OBJECT_ID('dbo.sp_obtener_ubicaciones_contenedor', 'P') IS NOT NULL
 DROP PROCEDURE sp_obtener_ubicaciones_contenedor;
 GO
@@ -1008,46 +993,11 @@ GO
 
 
 
--- Drop the procedure if it exists
-IF OBJECT_ID('dbo.sp_insertar_contenedor', 'P') IS NOT NULL
-DROP PROCEDURE sp_insertar_contenedor;
-GO
 
-CREATE PROCEDURE sp_insertar_contenedor
-    @nombre VARCHAR(32),
-    @id_tipo INT,
-    @id_ubicacion INT,
-    @id_estatus INT
-AS
-BEGIN
-    -- Insertar el nuevo registro en la tabla 'contenedores'
-    INSERT INTO contenedores
-    (
-        nombre,
-        id_tipo,
-        id_ubicacion,
-        id_estatus
-    )
-    VALUES
-    (
-        @nombre,
-        @id_tipo,
-        @id_ubicacion,
-        @id_estatus
-    );
-
-    -- Devolver la ID del nuevo contenedor
-    SELECT SCOPE_IDENTITY() AS id_contenedor;
-END;
-GO
-
-
-
-
-
--- Drop the procedure if it exists
+-- Vista para obtener los datos de todos los contenedores disponibles y el líquido que contienen dentro
 DROP VIEW vw_obtener_datos_contenedor_liquido;
 GO
+
 CREATE VIEW vw_obtener_datos_contenedor_liquido
 AS
 WITH LiquidoOrdenado AS (
@@ -1089,7 +1039,8 @@ GO
 
 
 
--- Drop the procedure if it exists -- USE IN RE SUBFUCTION TOO
+-- Procedimiento para obtener los contenedores con estado DISPONIBLE, es decir fecha de baja es NULL
+-- Este procedimiento tambien es utilizado en la sub-función reimprimir QR de Power Apps
 IF OBJECT_ID('dbo.sp_obtener_contenedores_disponibles', 'P') IS NOT NULL
 DROP PROCEDURE sp_obtener_contenedores_disponibles;
 GO
@@ -1101,19 +1052,17 @@ BEGIN
 END;
 GO
 
-EXEC sp_obtener_contenedores_disponibles;
 
 
 
 
-
+-- Procedimeinto para eliminar un contenedor
 IF OBJECT_ID('dbo.sp_eliminar_contenedor', 'P') IS NOT NULL
     DROP PROCEDURE sp_eliminar_contenedor;
 GO
 
 CREATE PROCEDURE sp_eliminar_contenedor
-    @id_contenedor INT,
-    @id_nuevo_estatus INT
+    @id_contenedor INT
 AS
 BEGIN
     -- Crear la tabla temporal para almacenar los resultados
@@ -1141,9 +1090,9 @@ BEGIN
         RETURN;
     END
 
-    -- Si el contenedor está vacío, actualizar el estatus
+    -- Si el contenedor está vacío, actualizar el estatus a NO DISPONIBLE y definir su fecha de baja al momento de la solicitud
     UPDATE contenedores
-    SET id_estatus = @id_nuevo_estatus,
+    SET id_estatus = 3,
     fecha_baja = GETDATE()
     WHERE id_contenedor = @id_contenedor;
 
@@ -1156,7 +1105,7 @@ GO
 
 
 
--- Drop the procedure if it exists
+-- Procedimiento para obtener los contenedores disponibles, excepto los eliminados (id_estatus = 3)
 IF OBJECT_ID('dbo.sp_obtener_contenedores_ex_nd', 'P') IS NOT NULL
 DROP PROCEDURE sp_obtener_contenedores_ex_nd;
 GO
@@ -1198,7 +1147,7 @@ GO
 
 
 
--- Drop the procedure if it exists
+-- Procedimiento para actualziar el estado de un líquido
 IF OBJECT_ID('dbo.sp_actualizar_estatus_liquido', 'P') IS NOT NULL
 DROP PROCEDURE sp_actualizar_estatus_liquido;
 GO
@@ -1244,7 +1193,7 @@ GO
 
 
 
--- Drop the procedure if it exists
+-- Procedimiento almacenado para actualizar el estado de un contenedor
 IF OBJECT_ID('dbo.sp_actualizar_estatus_contenedor', 'P') IS NOT NULL
     DROP PROCEDURE sp_actualizar_estatus_contenedor;
 GO

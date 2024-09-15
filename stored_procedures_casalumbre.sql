@@ -2117,3 +2117,5 @@ SELECT * FROM contenedores;
 EXEC sp_obtener_trazabilidad_liquido_t @id_contenedor_b = 7;
 
 SELECT * FROM combinaciones_detalle;
+
+SELECT * FROM estatus_contenedor;

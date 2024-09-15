@@ -119,7 +119,7 @@ GO
 
 -- Create the table with the correct structure and foreign keys
 CREATE TABLE transacciones_liquido_contenedor (
-    id_liquido_contendor INT NOT NULL IDENTITY(1,1) PRIMARY KEY, -- Unique identifier for the container-liquid relation
+    id_liquido_contenedor INT NOT NULL IDENTITY(1,1) PRIMARY KEY, -- Unique identifier for the container-liquid relation
     id_contenedor INT NOT NULL, -- Foreign key referencing contenedores
     id_liquido INT NOT NULL, -- Foreign key referencing liquidos
     cantidad_liquido_lts DECIMAL(10, 2) NOT NULL, -- Amount of liquid in the container in liters
