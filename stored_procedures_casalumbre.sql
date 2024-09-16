@@ -930,7 +930,7 @@ EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 11;
 SELECT * FROM transacciones_liquido_contenedor;
 SELECT * FROM liquidos;
 
-EXEC sp_insertar_liquido_combinado_c
+EXEC sp_insertar_liquido_combinado
     @nombre = 'LIQUIDO COMBINADO 6->7',
     @id_tipo = 2,
     @id_proveedor = 3,
@@ -945,15 +945,15 @@ EXEC sp_insertar_liquido_combinado_c
         N'[
         {
             "id_contenedor_componente": 6,
-            "cantidad_liquido_componente_lts": 2500.00
+            "cantidad_liquido_componente_lts": 500.00
         },
         {
             "id_contenedor_componente": 7,
-            "cantidad_liquido_componente_lts": 20000.00
+            "cantidad_liquido_componente_lts": 200.00
         }
         ]';
 
-EXEC sp_insertar_liquido_combinado_c
+EXEC sp_insertar_liquido_combinado
     @nombre = 'LIQUIDO COMBINADO 8->9->10',
     @id_tipo = 2,
     @id_proveedor = 3,
@@ -968,19 +968,19 @@ EXEC sp_insertar_liquido_combinado_c
         N'[
         {
             "id_contenedor_componente": 8,
-            "cantidad_liquido_componente_lts": 2500.00
+            "cantidad_liquido_componente_lts": 500.00
         },
         {
             "id_contenedor_componente": 9, 
-            "cantidad_liquido_componente_lts": 3000.00
+            "cantidad_liquido_componente_lts": 400.00
         },
                 {
             "id_contenedor_componente": 10, 
-            "cantidad_liquido_componente_lts": 3000.00
+            "cantidad_liquido_componente_lts": 600.00
         }
         ]';
-
-EXEC sp_insertar_liquido_combinado_c
+SELECT * FROM transacciones_liquido_contenedor;
+EXEC sp_insertar_liquido_combinado
     @nombre = 'LIQUIDO COMBINADO 7->10->11',
     @id_tipo = 2,
     @id_proveedor = 3,
@@ -995,19 +995,19 @@ EXEC sp_insertar_liquido_combinado_c
         N'[
         {
             "id_contenedor_componente": 7,
-            "cantidad_liquido_componente_lts": 2500.00
+            "cantidad_liquido_componente_lts": 500.00
         },
         {
             "id_contenedor_componente": 10, 
-            "cantidad_liquido_componente_lts": 10000.00
+            "cantidad_liquido_componente_lts": 1000.00
         },
         {
             "id_contenedor_componente": 11, 
-            "cantidad_liquido_componente_lts": 10000.00
+            "cantidad_liquido_componente_lts": 900.00
         }
         ]';
-
-EXEC sp_insertar_liquido_combinado_c
+SELECT * FROM transacciones_liquido_contenedor;
+EXEC sp_insertar_liquido_combinado
     @nombre = 'LIQUIDO COMBINADO 12->13->14->15',
     @id_tipo = 2,
     @id_proveedor = 3,
@@ -1022,23 +1022,23 @@ EXEC sp_insertar_liquido_combinado_c
         N'[
         {
             "id_contenedor_componente": 12,
-            "cantidad_liquido_componente_lts": 2500.00
+            "cantidad_liquido_componente_lts": 500.00
         },
         {
             "id_contenedor_componente": 13, 
-            "cantidad_liquido_componente_lts": 2000.00
+            "cantidad_liquido_componente_lts": 200.00
         },
         {
             "id_contenedor_componente": 14, 
-            "cantidad_liquido_componente_lts": 2000.00
+            "cantidad_liquido_componente_lts": 50.00
         },
         {
             "id_contenedor_componente": 15, 
-            "cantidad_liquido_componente_lts": 2000.00
+            "cantidad_liquido_componente_lts": 750.00
         }
         ]';
-
-EXEC sp_insertar_liquido_combinado_c
+SELECT * FROM transacciones_liquido_contenedor;
+EXEC sp_insertar_liquido_combinado
     @nombre = 'LIQUIDO COMBINADO 11->15',
     @id_tipo = 2,
     @id_proveedor = 3,
@@ -1053,17 +1053,17 @@ EXEC sp_insertar_liquido_combinado_c
         N'[
         {
             "id_contenedor_componente": 11,
-            "cantidad_liquido_componente_lts": 2500.00
+            "cantidad_liquido_componente_lts": 2000.00
         },
         {
             "id_contenedor_componente": 15,
-            "cantidad_liquido_componente_lts": 2500.00
+            "cantidad_liquido_componente_lts": 1500.00
         }
         ]';
 
 SELECT * FROM transacciones_liquido_contenedor;
 SELECT * FROM liquidos;
-EXEC sp_obtener_trazabilidad_liquido_t @id_contenedor_b = 15;
+EXEC sp_obtener_trazabilidad_liquido @id_contenedor_b = 15;
 EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 15;
 
 EXEC sp_insertar_liquido_combinado_p
@@ -2116,6 +2116,18 @@ SELECT * FROM contenedores;
 
 EXEC sp_obtener_trazabilidad_liquido_t @id_contenedor_b = 7;
 
-SELECT * FROM combinaciones_detalle;
 
+
+SELECT * FROM combinaciones;
+SELECT * FROM combinaciones_detalle;
+SELECT * FROM contenedores;
 SELECT * FROM estatus_contenedor;
+SELECT * FROM estatus_liquido;
+SELECT * FROM liquidos;
+SELECT * FROM liquidos_base_com;
+SELECT * FROM productos_terminados;
+SELECT * FROM proveedores;
+SELECT * FROM tipos_liquido;
+SELECT * FROM tipos_contenedor;
+SELECT * FROM transacciones_liquido_contenedor;
+SELECT * FROM ubicaciones_contenedor;

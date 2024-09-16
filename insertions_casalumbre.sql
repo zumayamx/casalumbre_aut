@@ -89,7 +89,7 @@ INSERT INTO proveedores (nombre) VALUES
 ('Proveedor E');
 
 -- Insert the initial liquid types into the tipo_liquido table
-INSERT INTO tipo_liquido (descripcion) VALUES 
+INSERT INTO tipos_liquido (descripcion) VALUES 
 ('alpha'),
 ('beta');
 

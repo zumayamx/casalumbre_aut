@@ -81,12 +81,12 @@ CREATE TABLE proveedores (
 );
 
 -- Drop the table if it exists
-IF OBJECT_ID('dbo.tipo_liquido', 'U') IS NOT NULL
-DROP TABLE dbo.tipo_liquido;
+IF OBJECT_ID('dbo.tipos_liquido', 'U') IS NOT NULL
+DROP TABLE dbo.tipos_liquido;
 GO
 
 -- Create the table with the correct structure
-CREATE TABLE tipo_liquido (
+CREATE TABLE tipos_liquido (
     id_tipo_liquido INT NOT NULL IDENTITY(1,1) PRIMARY KEY, -- Unique identifier for the liquid type
     descripcion VARCHAR(32) NOT NULL -- Description of the liquid type
 );
@@ -108,7 +108,7 @@ CREATE TABLE liquidos (
     alcoholes_sup DECIMAL(5, 2), -- Amount of superior alcohols
     porcentaje_alchol_vol DECIMAL(5, 2), -- Percentage of alcohol by volume
     orden_produccion INT NOT NULL, -- Production order
-    FOREIGN KEY (id_tipo) REFERENCES tipo_liquido(id_tipo_liquido),
+    FOREIGN KEY (id_tipo) REFERENCES tipos_liquido(id_tipo_liquido),
     FOREIGN KEY (id_proveedor) REFERENCES proveedores(id_proveedor)
 );
 

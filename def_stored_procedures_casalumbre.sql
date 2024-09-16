@@ -20,6 +20,24 @@ GO
 
 
 
+-- Drop the procedure if it exists
+IF OBJECT_ID('dbo.sp_obtener_proveedores', 'P') IS NOT NULL
+DROP PROCEDURE dbo.sp_obtener_proveedores;
+GO
+
+CREATE PROCEDURE sp_obtener_proveedores
+AS
+BEGIN
+    SET NOCOUNT ON;
+    -- Select all from proveedores (id_provedor, nombre)
+    SELECT * FROM proveedores;
+END;
+GO
+
+
+
+
+
 -- Procecimiento para obtener los datos de un contenedor si este esta vacío
 IF OBJECT_ID('dbo.sp_obtener_datos_contenedor_vacio', 'P') IS NOT NULL
 DROP PROCEDURE dbo.sp_obtener_datos_contenedor_vacio;
@@ -232,13 +250,13 @@ BEGIN
 
     -- Variables para almacenar los datos del último líquido en el contenedor
     DECLARE @ultimo_id_liquido INT;
-    DECLARE @ultimo_id_liquido_contendor INT;
+    DECLARE @ultimo_id_liquido_contenedor INT;
     DECLARE @cantidad_liquido_lts DECIMAL(10, 2);
 
     -- Obtener el último registro del líquido en el contenedor
     SELECT TOP 1
         @ultimo_id_liquido = t.id_liquido,
-        @ultimo_id_liquido_contendor = t.id_liquido_contendor,
+        @ultimo_id_liquido_contenedor = t.id_liquido_contenedor,
         @cantidad_liquido_lts = t.cantidad_liquido_lts
     FROM 
         transacciones_liquido_contenedor t
@@ -249,7 +267,7 @@ BEGIN
         AND t.id_estatus > 1
         AND c.id_estatus < 3
         AND c.fecha_baja IS NULL
-    ORDER BY t.id_liquido_contendor DESC;
+    ORDER BY t.id_liquido_contenedor DESC;
 
     -- Verificar si no se encontró un líquido válido
     IF @ultimo_id_liquido IS NULL OR @cantidad_liquido_lts <= 0.00
@@ -262,7 +280,7 @@ BEGIN
         @ultimo_id_liquido AS id_liquido,
         l.codigo AS codigo_liquido,
         @cantidad_liquido_lts AS cantidad_liquido_dentro_lts,
-        @ultimo_id_liquido_contendor AS ultimo_id_liquido_contenedor
+        @ultimo_id_liquido_contenedor AS ultimo_id_liquido_contenedor
     FROM 
         liquidos l
     WHERE 
@@ -415,11 +433,11 @@ GO
 -- Procedimiento para insertar un líquido combinado, es decir cuando se juntan dos o más líquidos ALFA (ID: 1) O BETA (ID: 2)
 -- Este es el procedimiento más importante hasta el momento, se encarga de la logica principal para obtener la trazabilidad posteriormente
 -- Se recomineda tener al menos una versión estable de este antes de realizar modificaciones
-IF OBJECT_ID('dbo.sp_insertar_liquido_combinado_c', 'P') IS NOT NULL
-    DROP PROCEDURE dbo.sp_insertar_liquido_combinado_c;
+IF OBJECT_ID('dbo.sp_insertar_liquido_combinado', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_insertar_liquido_combinado;
 GO
 
-CREATE PROCEDURE sp_insertar_liquido_combinado_c
+CREATE PROCEDURE sp_insertar_liquido_combinado
     @nombre VARCHAR(32),
     @id_tipo INT,
     @id_proveedor INT,
@@ -678,7 +696,7 @@ BEGIN
 
     -- Seleccionar la información actual del líquido que se encuentra dentro del contenedor
     SELECT TOP 1
-        t.id_liquido_contendor,
+        t.id_liquido_contenedor,
         t.id_estatus,
         l.id_liquido,
         l.cantidad_total_lts,
@@ -702,15 +720,14 @@ BEGIN
     WHERE
         c.id_contenedor = @id_contenedor
     ORDER BY 
-        t.id_liquido_contendor DESC;
+        t.id_liquido_contenedor DESC;
 END;
 GO
 
 
 
 
-
--- Procedimiento almacenado para obtener la trazabilidad de un líquido
+-- Procedimiento alamcenado para obtener la trazabilidad del líquido
 IF OBJECT_ID('dbo.sp_obtener_trazabilidad_liquido', 'P') IS NOT NULL
 DROP PROCEDURE sp_obtener_trazabilidad_liquido;
 GO
@@ -748,6 +765,8 @@ BEGIN
             lc.codigo AS codigo_componente,
             lc.id_tipo AS tipo_componente,
             td.cantidad_lts,
+            SUM(td.cantidad_lts) OVER (PARTITION BY t.id_combinacion) AS total_cantidad_combinacion, -- Suma de cantidad total de la combinación
+            td.cantidad_lts / SUM(td.cantidad_lts) OVER (PARTITION BY t.id_combinacion) * 100 AS porcentaje, -- Cálculo del porcentaje
             1 AS nivel,
             ROW_NUMBER() OVER (ORDER BY t.id_combinacion) AS traza  -- Asignar traza a nivel 1
         FROM 
@@ -774,6 +793,8 @@ BEGIN
             lc.codigo AS codigo_componente,
             lc.id_tipo AS tipo_componente,
             td.cantidad_lts,
+            SUM(td.cantidad_lts) OVER (PARTITION BY t.id_combinacion) AS total_cantidad_combinacion,
+            td.cantidad_lts / SUM(td.cantidad_lts) OVER (PARTITION BY t.id_combinacion) * 100 AS porcentaje, -- Cálculo del porcentaje
             cte.nivel + 1,
             cte.traza  -- Propagar la traza del nivel superior
         FROM
@@ -808,7 +829,7 @@ CREATE PROCEDURE dbo.sp_obtener_datos_contenedor_liquido
 AS
 BEGIN
     SELECT TOP 1
-        t.id_liquido_contendor,
+        t.id_liquido_contenedor,
         l.id_liquido,
         t.cantidad_liquido_lts,
         tc.capacidad_lts,
@@ -827,7 +848,7 @@ BEGIN
     WHERE
         c.id_contenedor = @id_contenedor
     ORDER BY 
-        t.id_liquido_contendor DESC;
+        t.id_liquido_contenedor DESC;
 END;
 GO
 
@@ -859,7 +880,7 @@ BEGIN
     WHERE
         t.id_contenedor = @id_contenedor
     ORDER BY 
-        t.id_liquido_contendor DESC;
+        t.id_liquido_contenedor DESC;
 
     -- Actualizar la cantidad de líquido en el contenedor
     UPDATE
@@ -1009,7 +1030,7 @@ WITH LiquidoOrdenado AS (
         l.codigo,
         e.descripcion,
         t.id_estatus,
-        ROW_NUMBER() OVER (PARTITION BY t.id_contenedor ORDER BY t.id_liquido_contendor DESC) AS rn
+        ROW_NUMBER() OVER (PARTITION BY t.id_contenedor ORDER BY t.id_liquido_contenedor DESC) AS rn
     FROM
         transacciones_liquido_contenedor t
     JOIN
@@ -1159,7 +1180,7 @@ AS
 BEGIN
     -- Creamos una tabla temporal para almacenar los resultados del procedimiento almacenado
     CREATE TABLE #TempTable (
-        id_liquido_contendor INT,
+        id_liquido_contenedor INT,
         id_liquido INT,
         cantidad_liquido_lts DECIMAL(18, 2),
         capacidad_lts DECIMAL(18, 2),
@@ -1171,11 +1192,11 @@ BEGIN
     INSERT INTO #TempTable
     EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = @id_contenedor;
 
-    -- Declaramos una variable para almacenar el id_liquido_contendor
-    DECLARE @id_liquido_contendor INT;
+    -- Declaramos una variable para almacenar el id_liquido_contenedor
+    DECLARE @id_liquido_contenedor INT;
 
-    -- Asignamos el valor de id_liquido_contendor desde la tabla temporal
-    SELECT TOP 1 @id_liquido_contendor = id_liquido_contendor FROM #TempTable;
+    -- Asignamos el valor de id_liquido_contenedor desde la tabla temporal
+    SELECT TOP 1 @id_liquido_contenedor = id_liquido_contenedor FROM #TempTable;
 
     -- Actualizamos el estatus en la tabla transacciones_liquido_contenedor
     UPDATE
@@ -1183,7 +1204,7 @@ BEGIN
     SET
         id_estatus = @id_nuevo_estatus
     WHERE
-        id_liquido_contendor = @id_liquido_contendor;
+        id_liquido_contenedor = @id_liquido_contenedor;
 
     -- Eliminamos la tabla temporal
     DROP TABLE #TempTable;
