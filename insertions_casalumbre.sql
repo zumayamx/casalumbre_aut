@@ -96,17 +96,18 @@ INSERT INTO tipos_liquido (descripcion) VALUES
 -- Insert multiple liquid records into the liquidos table
 
 -- Ensure the estatus is not CUARENTENA
-INSERT INTO liquidos (codigo, id_tipo, cantidad_total_lts, fecha_produccion, id_proveedor, metanol_mg_100mlAA, alcoholes_superiores_mg_100mlAA, alcohol_vol_20_c_porcentaje, orden_produccion) VALUES
-('ESPADÍN', 1, 500.00, GETDATE(), 1, 1.50, 0.20, 40.00, 1001), -- 2 - APROBADO 1
-('TOBALÁ', 1, 300.00, GETDATE(), 2, 1.20, 0.30, 38.00, 1002), -- 2 - APROBADO 1
-('MEZCAL DM', 1, 1000.00, GETDATE(), 3, 2.00, 0.10, 42.00, 1003), -- 2 - APROBADO 1
-('MEZCAL ODT', 1, 800.00, GETDATE(), 4, 1.80, 0.25, 39.00, 1004), -- 3 - APROBADO 2
-('CABEZAS', 1, 600.00, GETDATE(), 5, 1.60, 0.15, 41.00, 1005), -- 3 - APROBADO 2
-('CORAZON', 1, 900.00, GETDATE(), 1, 1.70, 0.22, 40.50, 1006), -- 2 - APROBADO 1
-('COLAS', 1, 700.00, GETDATE(), 2, 1.40, 0.18, 39.50, 1007), -- 2 - APROBADO 1
-('ORDINARIO', 1, 400.00, GETDATE(), 3, 1.30, 0.20, 38.50, 1008), -- 2 - APROBADO 1
-('AGUA', 1, 100.00, GETDATE(), 4, 0.00, 0.00, 0.00, 1009), -- 3 - APROBADO 2
-('MEZCAL A', 1, 750.00, GETDATE(), 5, 1.50, 0.25, 40.00, 1010); -- 2 - APROBADO 1
+INSERT INTO liquidos (codigo, id_tipo, cantidad_total_lts, fecha_produccion, id_proveedor, alcohol_vol_20_c_porcentaje, extracto_seco_gL, metanol_mg_100mlAA, alcoholes_superiores_mg_100mlAA, aldehidos_mg_100mlAA, furfural_mg_100mlAA, plomo_mg_L, arsenico_mg_L, orden_produccion) 
+VALUES
+('ESPADÍN', 1, 500.00, GETDATE(), 1, 40.00, 2.50, 1.50, 0.20, 0.30, 0.05, 0.001, 0.002, 1001), -- 2 - APROBADO 1
+('TOBALÁ', 1, 300.00, GETDATE(), 2, 38.00, 3.00, 1.20, 0.30, 0.40, 0.06, 0.001, 0.002, 1002), -- 2 - APROBADO 1
+('MEZCAL DM', 1, 1000.00, GETDATE(), 3, 42.00, 2.80, 2.00, 0.10, 0.25, 0.07, 0.002, 0.003, 1003), -- 2 - APROBADO 1
+('MEZCAL ODT', 1, 800.00, GETDATE(), 4, 39.00, 2.70, 1.80, 0.25, 0.35, 0.08, 0.001, 0.002, 1004), -- 3 - APROBADO 2
+('CABEZAS', 1, 600.00, GETDATE(), 5, 41.00, 2.60, 1.60, 0.15, 0.20, 0.06, 0.002, 0.003, 1005), -- 3 - APROBADO 2
+('CORAZON', 1, 900.00, GETDATE(), 1, 40.50, 2.75, 1.70, 0.22, 0.32, 0.07, 0.001, 0.002, 1006), -- 2 - APROBADO 1
+('COLAS', 1, 700.00, GETDATE(), 2, 39.50, 2.55, 1.40, 0.18, 0.28, 0.06, 0.001, 0.002, 1007), -- 2 - APROBADO 1
+('ORDINARIO', 1, 400.00, GETDATE(), 3, 38.50, 2.45, 1.30, 0.20, 0.30, 0.05, 0.001, 0.002, 1008), -- 2 - APROBADO 1
+('AGUA', 1, 100.00, GETDATE(), 4, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.000, 0.000, 1009), -- 3 - APROBADO 2
+('MEZCAL A', 1, 750.00, GETDATE(), 5, 40.00, 2.60, 1.50, 0.25, 0.35, 0.07, 0.002, 0.003, 1010); -- 2 - APROBADO 1
 
 INSERT INTO liquidos (codigo, id_tipo, cantidad_total_lts, fecha_produccion, id_proveedor, metanol, alcoholes_sup, porcentaje_alchol_vol, orden_produccion) VALUES
 ('LIQUIDO AÑADIR', 1, 750.00, GETDATE(), 5, 1.50, 0.25, 40.00, 1900);

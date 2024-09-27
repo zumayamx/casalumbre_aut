@@ -108,10 +108,10 @@ CREATE TABLE liquidos (
     extracto_seco_gL DECIMAL(5, 2),
     metanol_mg_100mlAA DECIMAL(5, 2), -- Amount of methanol
     alcoholes_superiores_mg_100mlAA DECIMAL(5, 2), -- Amount of superior alcohols
-    aldehidos_mg_100mlAA DECIMAL(5,2),
-    furfural_mg_100mlAA DECIMAL (5, 2),
-    plomo_mg_L DECIMAL (5, 2),
-    arsenico_mg_L DECIMAL (5, 2),
+    aldehidos_mg_100mlAA DECIMAL(5,3),
+    furfural_mg_100mlAA DECIMAL (5, 3),
+    plomo_mg_L DECIMAL (5, 3),
+    arsenico_mg_L DECIMAL (5, 3),
     orden_produccion INT NOT NULL, -- Production order
     FOREIGN KEY (id_tipo) REFERENCES tipos_liquido(id_tipo_liquido),
     FOREIGN KEY (id_proveedor) REFERENCES proveedores(id_proveedor)
