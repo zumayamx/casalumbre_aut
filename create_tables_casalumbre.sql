@@ -104,9 +104,14 @@ CREATE TABLE liquidos (
     cantidad_total_lts DECIMAL(10, 2) NOT NULL, -- Total amount of liquid in liters
     fecha_produccion DATE DEFAULT GETDATE(), -- Production date of the liquid
     id_proveedor INT NOT NULL, -- Foreign key referencing proveedores
-    metanol DECIMAL(5, 2), -- Amount of methanol
-    alcoholes_sup DECIMAL(5, 2), -- Amount of superior alcohols
-    porcentaje_alchol_vol DECIMAL(5, 2), -- Percentage of alcohol by volume
+    alcohol_vol_20_c_porcentaje DECIMAL(5, 2), -- Percentage of alcohol by volume
+    extracto_seco_gL DECIMAL(5, 2),
+    metanol_mg_100mlAA DECIMAL(5, 2), -- Amount of methanol
+    alcoholes_superiores_mg_100mlAA DECIMAL(5, 2), -- Amount of superior alcohols
+    aldehidos_mg_100mlAA DECIMAL(5,2),
+    furfural_mg_100mlAA DECIMAL (5, 2),
+    plomo_mg_L DECIMAL (5, 2),
+    arsenico_mg_L DECIMAL (5, 2),
     orden_produccion INT NOT NULL, -- Production order
     FOREIGN KEY (id_tipo) REFERENCES tipos_liquido(id_tipo_liquido),
     FOREIGN KEY (id_proveedor) REFERENCES proveedores(id_proveedor)
@@ -168,6 +173,7 @@ CREATE TABLE combinaciones_detalle (
     id_combinacion INT NOT NULL, -- Foreign key referencing combinaciones
     id_liquido INT NOT NULL, -- Foreign key referencing liquidos
     cantidad_lts DECIMAL(10, 2) NOT NULL CHECK (cantidad_lts > 0), -- Amount of liquid in liters, must be greater than 0
+    porcentaje DECIMAL(10, 2) NOT NULL,
     FOREIGN KEY (id_combinacion) REFERENCES combinaciones(id_combinacion),
     FOREIGN KEY (id_liquido) REFERENCES liquidos(id_liquido)
 );

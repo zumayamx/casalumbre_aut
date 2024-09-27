@@ -96,7 +96,7 @@ INSERT INTO tipos_liquido (descripcion) VALUES
 -- Insert multiple liquid records into the liquidos table
 
 -- Ensure the estatus is not CUARENTENA
-INSERT INTO liquidos (codigo, id_tipo, cantidad_total_lts, fecha_produccion, id_proveedor, metanol, alcoholes_sup, porcentaje_alchol_vol, orden_produccion) VALUES
+INSERT INTO liquidos (codigo, id_tipo, cantidad_total_lts, fecha_produccion, id_proveedor, metanol_mg_100mlAA, alcoholes_superiores_mg_100mlAA, alcohol_vol_20_c_porcentaje, orden_produccion) VALUES
 ('ESPADÍN', 1, 500.00, GETDATE(), 1, 1.50, 0.20, 40.00, 1001), -- 2 - APROBADO 1
 ('TOBALÁ', 1, 300.00, GETDATE(), 2, 1.20, 0.30, 38.00, 1002), -- 2 - APROBADO 1
 ('MEZCAL DM', 1, 1000.00, GETDATE(), 3, 2.00, 0.10, 42.00, 1003), -- 2 - APROBADO 1

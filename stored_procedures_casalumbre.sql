@@ -172,12 +172,17 @@ EXEC sp_insertar_transaccion_liquido_contenedor
     @persona_encargada = 'manolo@gmail.com',
     @id_estatus_liquido = 2;
 
+SELECT * FROM liquidos;
+SELECT * FROM transacciones_liquido_contenedor;
+
 EXEC sp_insertar_transaccion_liquido_contenedor
     @id_contenedor_destino = 8, 
     @id_liquido = 3, 
     @cantidad_liquido_lts = 1000.00, 
     @persona_encargada = 'manolo@gmail.com',
     @id_estatus_liquido = 2;
+
+SELECT * FROM liquidos;
 
 EXEC sp_insertar_transaccion_liquido_contenedor
     @id_contenedor_destino = 9, 
@@ -192,6 +197,9 @@ EXEC sp_insertar_transaccion_liquido_contenedor
     @cantidad_liquido_lts = 600.00, 
     @persona_encargada = 'manolo@gmail.com',
     @id_estatus_liquido = 2;
+
+SELECT * FROM liquidos;
+SELECT * FROM transacciones_liquido_contenedor;
 
 EXEC sp_insertar_transaccion_liquido_contenedor
     @id_contenedor_destino = 11, 
@@ -930,16 +938,16 @@ EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 11;
 SELECT * FROM transacciones_liquido_contenedor;
 SELECT * FROM liquidos;
 
-EXEC sp_insertar_liquido_combinado
+EXEC sp_insertar_liquido_combinado_b
     @nombre = 'LIQUIDO COMBINADO 6->7',
     @id_tipo = 2,
     @id_proveedor = 3,
     @metanol = 10.15,
     @alcoholes_sup = 0.1,
     @porcentaje_alcohol_vol = 40.60,
-    @orden_produccion = 1021,
+    @orden_produccion = 1020,
     @id_estatus = 2,
-    @id_contenedor_destino = 7,
+    @id_contenedor_destino = 6,
     @persona_encargada = 'manolo@gmail.com',
     @composicion_liquidos_json = 
         N'[
@@ -949,12 +957,12 @@ EXEC sp_insertar_liquido_combinado
         },
         {
             "id_contenedor_componente": 7,
-            "cantidad_liquido_componente_lts": 200.00
+            "cantidad_liquido_componente_lts": 250.00
         }
         ]';
 
-EXEC sp_insertar_liquido_combinado
-    @nombre = 'LIQUIDO COMBINADO 8->9->10',
+EXEC sp_insertar_liquido_combinado_b
+    @nombre = 'LIQUIDO COMBINADO 8->9',
     @id_tipo = 2,
     @id_proveedor = 3,
     @metanol = 10.15,
@@ -962,26 +970,26 @@ EXEC sp_insertar_liquido_combinado
     @porcentaje_alcohol_vol = 40.60,
     @orden_produccion = 1022,
     @id_estatus = 2,
-    @id_contenedor_destino = 10,
+    @id_contenedor_destino = 9,
     @persona_encargada = 'manolo@gmail.com',
     @composicion_liquidos_json = 
         N'[
         {
             "id_contenedor_componente": 8,
-            "cantidad_liquido_componente_lts": 500.00
+            "cantidad_liquido_componente_lts": 200.00
         },
         {
             "id_contenedor_componente": 9, 
-            "cantidad_liquido_componente_lts": 400.00
-        },
-                {
-            "id_contenedor_componente": 10, 
-            "cantidad_liquido_componente_lts": 600.00
+            "cantidad_liquido_componente_lts": 800.00
         }
         ]';
+
+SELECT * FROM combinaciones_detalle;
+
 SELECT * FROM transacciones_liquido_contenedor;
-EXEC sp_insertar_liquido_combinado
-    @nombre = 'LIQUIDO COMBINADO 7->10->11',
+
+EXEC sp_insertar_liquido_combinado_b
+    @nombre = 'LIQUIDO COMBINADO 6->9->10',
     @id_tipo = 2,
     @id_proveedor = 3,
     @metanol = 10.15,
@@ -989,23 +997,24 @@ EXEC sp_insertar_liquido_combinado
     @porcentaje_alcohol_vol = 40.60,
     @orden_produccion = 1023,
     @id_estatus = 2,
-    @id_contenedor_destino = 11,
+    @id_contenedor_destino = 10,
     @persona_encargada = 'manolo@gmail.com',
     @composicion_liquidos_json = 
         N'[
         {
-            "id_contenedor_componente": 7,
-            "cantidad_liquido_componente_lts": 500.00
+            "id_contenedor_componente": 6,
+            "cantidad_liquido_componente_lts": 200.00
+        },
+        {
+            "id_contenedor_componente": 9, 
+            "cantidad_liquido_componente_lts": 200.00
         },
         {
             "id_contenedor_componente": 10, 
-            "cantidad_liquido_componente_lts": 1000.00
-        },
-        {
-            "id_contenedor_componente": 11, 
-            "cantidad_liquido_componente_lts": 900.00
+            "cantidad_liquido_componente_lts": 600.00
         }
         ]';
+
 SELECT * FROM transacciones_liquido_contenedor;
 EXEC sp_insertar_liquido_combinado
     @nombre = 'LIQUIDO COMBINADO 12->13->14->15',
@@ -2131,3 +2140,38 @@ SELECT * FROM tipos_liquido;
 SELECT * FROM tipos_contenedor;
 SELECT * FROM transacciones_liquido_contenedor;
 SELECT * FROM ubicaciones_contenedor;
+
+EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = 15;
+EXEC sp_obtener_datos_validos_liquido_contenedor_destino @id_contenedor = 15;
+
+SELECT * FROM transacciones_liquido_contenedor;
+
+EXEC sp_obtener_trazabilidad_liquido @id_contenedor = 11;
+EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = 11;
+SELECT * FROM liquidos;
+
+EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 9;
+
+SELECT * FROM combinaciones_detalle;
+
+SELECT * FROM liquidos_base_com;
+
+EXEC sp_obtener_liquidos_base;
+
+SELECT * FROM liquidos;
+SELECT * FROM transacciones_liquido_contenedor;
+SELECT * FROM combinaciones;
+SELECT * FROM combinaciones_detalle;
+SELECT * FROM contenedores;
+SELECT * FROM productos_terminados;
+
+SELECT * FROM contenedores;
+SELECT * FROM liquidos;
+
+SELECT * FROM transacciones_liquido_contenedor;
+
+EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = 18;
+
+EXEC sp_obtener_datos_contenedor @id_contenedor = 18;
+
+SELECT * FROM liquidos;
