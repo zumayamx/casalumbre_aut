@@ -101,17 +101,17 @@ CREATE TABLE liquidos (
     id_liquido INT NOT NULL IDENTITY(1,1) PRIMARY KEY, -- Unique identifier for the liquid
     codigo VARCHAR(32) NOT NULL, -- Code of the liquid
     id_tipo INT NOT NULL, -- Foreign key referencing tipo_liquido
-    cantidad_total_lts DECIMAL(10, 2) NOT NULL, -- Total amount of liquid in liters
+    cantidad_total_lts DECIMAL(18, 4) NOT NULL, -- Total amount of liquid in liters
     fecha_produccion DATE DEFAULT GETDATE(), -- Production date of the liquid
     id_proveedor INT NOT NULL, -- Foreign key referencing proveedores
-    alcohol_vol_20_c_porcentaje DECIMAL(5, 2), -- Percentage of alcohol by volume
-    extracto_seco_gL DECIMAL(5, 2),
-    metanol_mg_100mlAA DECIMAL(5, 2), -- Amount of methanol
-    alcoholes_superiores_mg_100mlAA DECIMAL(5, 2), -- Amount of superior alcohols
-    aldehidos_mg_100mlAA DECIMAL(5,3),
-    furfural_mg_100mlAA DECIMAL (5, 3),
-    plomo_mg_L DECIMAL (5, 3),
-    arsenico_mg_L DECIMAL (5, 3),
+    alcohol_vol_20_c_porcentaje DECIMAL(18, 5) CHECK (alcohol_vol_20_c_porcentaje >= 0 AND alcohol_vol_20_c_porcentaje <= 1), -- Percentage of alcohol by volume, limited to between 0 and 1
+    extracto_seco_gL DECIMAL(18, 5), -- Extracto seco
+    metanol_mg_100mlAA DECIMAL(18, 5), -- Amount of methanol
+    alcoholes_superiores_mg_100mlAA DECIMAL(18, 5), -- Amount of superior alcohols
+    aldehidos_mg_100mlAA DECIMAL(18, 5), -- Aldehidos
+    furfural_mg_100mlAA DECIMAL(18, 5), -- Furfural
+    plomo_mg_L DECIMAL(18, 5), -- Plomo
+    arsenico_mg_L DECIMAL(18, 5), -- Arsenico
     orden_produccion INT NOT NULL, -- Production order
     FOREIGN KEY (id_tipo) REFERENCES tipos_liquido(id_tipo_liquido),
     FOREIGN KEY (id_proveedor) REFERENCES proveedores(id_proveedor)
@@ -159,7 +159,7 @@ GO
 -- Create the table with the correct structure and foreign keys
 CREATE TABLE combinaciones (
     id_combinacion INT NOT NULL IDENTITY(1,1) PRIMARY KEY, -- Unique identifier for the combination
-    id_liquido_combinado INT NOT NULL, -- Foreign key referencing liquidos
+    id_liquido_combinado INT, -- Foreign key referencing liquidos
     FOREIGN KEY (id_liquido_combinado) REFERENCES liquidos(id_liquido)
 );
 

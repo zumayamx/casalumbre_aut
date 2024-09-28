@@ -1,1 +1,5 @@
 .DS_Store
+drop_registers.sql
+names.txt
+tables_query.sql
+test.sql
