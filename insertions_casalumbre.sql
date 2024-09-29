@@ -73,6 +73,9 @@ INSERT INTO contenedores (nombre, id_tipo, id_ubicacion, fecha_alta, id_estatus)
 INSERT INTO contenedores (nombre, id_tipo, id_ubicacion, fecha_alta, id_estatus) VALUES
 ('TANQUE S', 5, 5, '2023-03-01', 2);
 
+INSERT INTO contenedores (nombre, id_tipo, id_ubicacion, fecha_alta, id_estatus) VALUES
+('EXC', 5, 5, '2023-03-01', 4);
+
 -- Insert multiple status descriptions into the estatus_liquido table
 INSERT INTO estatus_liquido (descripcion) VALUES 
 ('CUARENTENA'),
