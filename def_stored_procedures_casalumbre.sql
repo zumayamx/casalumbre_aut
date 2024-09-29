@@ -17,7 +17,7 @@ END;
 GO
 
 
-
+EXEC sp_obtener_liquidos_base;
 
 
 -- Drop the procedure if it exists
@@ -180,79 +180,6 @@ GO
 
 -- Procedimiento para isertar una nueva transacción de un liquido a un contenedor
 -- Este procedimiento también es usado en la función transferir de Power Apps
-
-EXEC sp_insertar_transaccion_liquido_contenedor
-    @id_contenedor_destino = 6,
-    @id_liquido = 1,
-    @cantidad_liquido_lts = 10000,
-    @persona_encargada = 'manolo@gmail.com',
-    @id_estatus_liquido = 2;
-
-EXEC sp_insertar_transaccion_liquido_contenedor
-    @id_contenedor_destino = 7,
-    @id_liquido = 2,
-    @cantidad_liquido_lts = 10000,
-    @persona_encargada = 'manolo@gmail.com',
-    @id_estatus_liquido = 2;
-
-EXEC sp_insertar_transaccion_liquido_contenedor
-    @id_contenedor_destino = 8,
-    @id_liquido = 3,
-    @cantidad_liquido_lts = 10000,
-    @persona_encargada = 'manolo@gmail.com',
-    @id_estatus_liquido = 2;
-
-EXEC sp_insertar_transaccion_liquido_contenedor
-    @id_contenedor_destino = 9,
-    @id_liquido = 4,
-    @cantidad_liquido_lts = 10000,
-    @persona_encargada = 'manolo@gmail.com',
-    @id_estatus_liquido = 2;
-
-EXEC sp_insertar_transaccion_liquido_contenedor
-    @id_contenedor_destino = 10,
-    @id_liquido = 5,
-    @cantidad_liquido_lts = 10000,
-    @persona_encargada = 'manolo@gmail.com',
-    @id_estatus_liquido = 2;
-
-EXEC sp_insertar_transaccion_liquido_contenedor
-    @id_contenedor_destino = 11,
-    @id_liquido = 6,
-    @cantidad_liquido_lts = 10000,
-    @persona_encargada = 'manolo@gmail.com',
-    @id_estatus_liquido = 2;
-
-EXEC sp_insertar_transaccion_liquido_contenedor
-    @id_contenedor_destino = 12,
-    @id_liquido = 7,
-    @cantidad_liquido_lts = 10000,
-    @persona_encargada = 'manolo@gmail.com',
-    @id_estatus_liquido = 2;
-
-EXEC sp_insertar_transaccion_liquido_contenedor
-    @id_contenedor_destino = 13,
-    @id_liquido = 8,
-    @cantidad_liquido_lts = 10000,
-    @persona_encargada = 'manolo@gmail.com',
-    @id_estatus_liquido = 2;
-
-EXEC sp_insertar_transaccion_liquido_contenedor
-    @id_contenedor_destino = 14,
-    @id_liquido = 9,
-    @cantidad_liquido_lts = 10000,
-    @persona_encargada = 'manolo@gmail.com',
-    @id_estatus_liquido = 2;
-
-EXEC sp_insertar_transaccion_liquido_contenedor
-    @id_contenedor_destino = 15,
-    @id_liquido = 10,
-    @cantidad_liquido_lts = 10000,
-    @persona_encargada = 'manolo@gmail.com',
-    @id_estatus_liquido = 2;
-
-SELECT * FROM estatus_liquido;
-
 IF OBJECT_ID('dbo.sp_insertar_transaccion_liquido_contenedor', 'P') IS NOT NULL
 DROP PROCEDURE dbo.sp_insertar_transaccion_liquido_contenedor;
 GO
@@ -545,449 +472,6 @@ CREATE PROCEDURE sp_insertar_liquido_combinado
     @nombre VARCHAR(32),
     @id_tipo INT,
     @id_proveedor INT,
-    @metanol_mg_100mlAA DECIMAL(5, 3),
-    @alcoholes_superiores_mg_100mlAA DECIMAL(5, 3),
-    @porcentaje_alcohol_vol DECIMAL(5, 3),
-    @orden_produccion INT,
-    @id_estatus INT,
-    @id_contenedor_destino INT,
-    @persona_encargada VARCHAR(32),
-    @composicion_liquidos_json NVARCHAR(MAX)
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    BEGIN TRY
-        BEGIN TRANSACTION;
-
-        DECLARE @id_liquido_combinado INT;
-        DECLARE @id_combinacion INT;
-        DECLARE @id_liquido_componente INT;
-        DECLARE @cantidad_total_componentes DECIMAL(10, 2) = 0;
-        DECLARE @cantidad_generada_lts DECIMAL(10, 2);
-
-        -- Calcular la cantidad total de los componentes del líquido en litros
-        SELECT @cantidad_total_componentes = SUM(cantidad_liquido_componente_lts)
-        FROM OPENJSON(@composicion_liquidos_json)
-        WITH
-        (
-            id_contenedor_componente INT '$.id_contenedor_componente',
-            cantidad_liquido_componente_lts DECIMAL(10, 2) '$.cantidad_liquido_componente_lts'
-        );
-
-        -- La cantidad generada será igual a la cantidad total de componentes
-        SET @cantidad_generada_lts = @cantidad_total_componentes;
-
-        -- Verificar si el contenedor destino está vacío y actualizar a "EN USO"
-        IF EXISTS (SELECT 1 FROM contenedores WHERE id_contenedor = @id_contenedor_destino AND id_estatus = 2)
-        BEGIN
-            UPDATE contenedores
-            SET id_estatus = 1
-            WHERE id_contenedor = @id_contenedor_destino;
-        END;
-
-        -- Insertar el nuevo registro en la tabla liquidos
-        INSERT INTO liquidos
-        (
-            codigo,
-            id_tipo,
-            cantidad_total_lts,
-            id_proveedor,
-            metanol_mg_100mlAA,
-            alcoholes_superiores_mg_100mlAA,
-            alcohol_vol_20_c_porcentaje,
-            orden_produccion
-        )
-        VALUES
-        (
-            @nombre,
-            @id_tipo,
-            @cantidad_generada_lts,
-            @id_proveedor,
-            @metanol_mg_100mlAA,
-            @alcoholes_superiores_mg_100mlAA,
-            @porcentaje_alcohol_vol,
-            @orden_produccion
-        );
-
-        -- Obtener el ID del nuevo líquido combinado
-        SET @id_liquido_combinado = SCOPE_IDENTITY();
-
-        -- Insertar en la tabla combinaciones
-        INSERT INTO combinaciones
-        (
-            id_liquido_combinado
-        )
-        VALUES
-        (
-            @id_liquido_combinado
-        );
-
-        -- Obtener el ID de la combinación
-        SET @id_combinacion = SCOPE_IDENTITY();
-
-        -- Procesar el JSON dentro de la tabla combinaciones_detalle
-        DECLARE @id_contenedor_componente INT;
-        DECLARE @cantidad_liquido_componente_lts DECIMAL(10, 2);
-        DECLARE @porcentaje DECIMAL(10, 2);
-
-        -- Recorrer cada elemento del JSON
-        DECLARE cur CURSOR FOR
-        SELECT 
-            id_contenedor_componente,
-            cantidad_liquido_componente_lts
-        FROM 
-            OPENJSON(@composicion_liquidos_json)
-        WITH
-        (
-            id_contenedor_componente INT '$.id_contenedor_componente',
-            cantidad_liquido_componente_lts DECIMAL(10, 2) '$.cantidad_liquido_componente_lts'
-        );
-
-        OPEN cur;
-        FETCH NEXT FROM cur INTO @id_contenedor_componente, @cantidad_liquido_componente_lts;
-
-        WHILE @@FETCH_STATUS = 0
-        BEGIN
-            -- Crear una tabla temporal para almacenar el resultado de sp_obtener_datos_validos_liquido_contenedor
-            DECLARE @resultado TABLE (
-                id_liquido INT,
-                codigo_liquido VARCHAR(255), 
-                cantidad_liquido_dentro_lts DECIMAL(10, 2),
-                ultimo_id_liquido_contenedor INT
-            );
-
-            -- Insertar los resultados del procedimiento en la tabla temporal
-            INSERT INTO @resultado
-            EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = @id_contenedor_componente;
-
-            -- Obtener el ID del líquido componente
-            SELECT @id_liquido_componente = id_liquido
-            FROM @resultado;
-
-            -- Verificar que el ID del líquido componente no sea NULL
-            IF @id_liquido_componente IS NULL
-            BEGIN
-                ROLLBACK TRANSACTION;
-                THROW 50001, 'Error: El id_liquido obtenido es NULL o no válido.', 1;
-            END
-
-            -- Calcular el porcentaje del componente
-            SET @porcentaje = (@cantidad_liquido_componente_lts / @cantidad_generada_lts) * 100;
-
-            -- Insertar en la tabla combinaciones_detalle
-            INSERT INTO combinaciones_detalle
-            (
-                id_combinacion,
-                id_liquido,
-                cantidad_lts,
-                porcentaje
-            )
-            VALUES
-            (
-                @id_combinacion,
-                @id_liquido_componente,
-                @cantidad_liquido_componente_lts,
-                @porcentaje
-            );
-
-            -- Actualizar las cantidades en los contenedores de cada componente
-            UPDATE 
-                t
-            SET 
-                t.cantidad_liquido_lts = t.cantidad_liquido_lts - @cantidad_liquido_componente_lts
-            FROM
-                transacciones_liquido_contenedor t
-            WHERE
-                t.id_contenedor = @id_contenedor_componente AND t.id_liquido = @id_liquido_componente;
-
-            -- Obtener el siguiente componente
-            FETCH NEXT FROM cur INTO @id_contenedor_componente, @cantidad_liquido_componente_lts;
-        END;
-
-        CLOSE cur;
-        DEALLOCATE cur;
-
-        -- Insertar la relación entre el contenedor destino y el nuevo líquido
-        INSERT INTO transacciones_liquido_contenedor
-        (
-            id_contenedor,
-            id_liquido,
-            cantidad_liquido_lts,
-            persona_encargada,
-            id_estatus
-        )
-        VALUES
-        (
-            @id_contenedor_destino,
-            @id_liquido_combinado,
-            @cantidad_generada_lts,
-            @persona_encargada,
-            @id_estatus
-        );
-
-        -- Confirmar la transacción
-        COMMIT TRANSACTION;
-    END TRY
-    BEGIN CATCH
-        -- Deshacer todo en caso de error
-        ROLLBACK TRANSACTION;
-        THROW;
-    END CATCH;
-END;
-GO
-
-IF OBJECT_ID('dbo.sp_insertar_liquido_combinado_b', 'P') IS NOT NULL
-    DROP PROCEDURE dbo.sp_insertar_liquido_combinado_b;
-GO
-
-CREATE PROCEDURE sp_insertar_liquido_combinado_b
-    @nombre VARCHAR(32),
-    @id_tipo INT,
-    @id_proveedor INT,
-    @orden_produccion INT,
-    @id_estatus INT,
-    @id_contenedor_destino INT,
-    @persona_encargada VARCHAR(32),
-    @composicion_liquidos_json NVARCHAR(MAX)
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    BEGIN TRY
-        BEGIN TRANSACTION;
-
-        DECLARE @id_liquido_combinado INT;
-        DECLARE @id_combinacion INT;
-        DECLARE @id_liquido_componente INT;
-        DECLARE @cantidad_total_componentes DECIMAL(18, 4) = 0;
-        DECLARE @cantidad_generada_lts DECIMAL(18, 4);
-
-        -- Variables para almacenar los cálculos acumulados con mayor precisión
-        DECLARE @extracto_seco_gL_total DECIMAL(18, 5) = 0;
-        DECLARE @alcohol_vol_20_c_porcentaje_total DECIMAL(18, 5) = 0;
-        DECLARE @metanol_mg_100mlAA_total DECIMAL(18, 5) = 0;
-        DECLARE @alcoholes_superiores_mg_100mlAA_total DECIMAL(18, 5) = 0;
-        DECLARE @aldehidos_mg_100mlAA_total DECIMAL(18, 5) = 0;
-        DECLARE @furfural_mg_100mlAA_total DECIMAL(18, 5) = 0;
-        DECLARE @plomo_mg_L_total DECIMAL(18, 5) = 0;
-        DECLARE @arsenico_mg_L_total DECIMAL(18, 5) = 0;
-
-        -- Calcular la cantidad total de los componentes del líquido en litros
-        SELECT @cantidad_total_componentes = SUM(cantidad_liquido_componente_lts)
-        FROM OPENJSON(@composicion_liquidos_json)
-        WITH
-        (
-            id_contenedor_componente INT '$.id_contenedor_componente',
-            cantidad_liquido_componente_lts DECIMAL(18, 4) '$.cantidad_liquido_componente_lts'
-        );
-
-        -- La cantidad generada será igual a la cantidad total de componentes
-        SET @cantidad_generada_lts = @cantidad_total_componentes;
-
-        -- Verificar si el contenedor destino está vacío y actualizar a "EN USO"
-        IF EXISTS (SELECT 1 FROM contenedores WHERE id_contenedor = @id_contenedor_destino AND id_estatus = 2)
-        BEGIN
-            UPDATE contenedores
-            SET id_estatus = 1
-            WHERE id_contenedor = @id_contenedor_destino;
-        END;
-
-        -- Insertar el nuevo registro en la tabla combinaciones antes de procesar los detalles
-        INSERT INTO combinaciones
-        (
-            id_liquido_combinado
-        )
-        VALUES
-        (
-            NULL -- Aún no tenemos el id_liquido_combinado
-        );
-
-        -- Obtener el ID de la combinación para usarlo en combinaciones_detalle
-        SET @id_combinacion = SCOPE_IDENTITY();
-
-        -- Validar que se obtuvo un ID de combinación válido
-        IF @id_combinacion IS NULL
-        BEGIN
-            ROLLBACK TRANSACTION;
-            THROW 50001, 'Error: No se pudo obtener el ID de la combinación.', 1;
-        END
-
-        -- Procesar el JSON dentro de la tabla combinaciones_detalle
-        DECLARE @id_contenedor_componente INT;
-        DECLARE @cantidad_liquido_componente_lts DECIMAL(18, 4);
-        DECLARE @porcentaje DECIMAL(10, 2);
-
-        DECLARE cur CURSOR FOR
-        SELECT 
-            id_contenedor_componente,
-            cantidad_liquido_componente_lts
-        FROM 
-            OPENJSON(@composicion_liquidos_json)
-        WITH
-        (
-            id_contenedor_componente INT '$.id_contenedor_componente',
-            cantidad_liquido_componente_lts DECIMAL(18, 4) '$.cantidad_liquido_componente_lts'
-        );
-
-        OPEN cur;
-        FETCH NEXT FROM cur INTO @id_contenedor_componente, @cantidad_liquido_componente_lts;
-
-        WHILE @@FETCH_STATUS = 0
-        BEGIN
-            -- Crear una tabla temporal para almacenar el resultado de sp_obtener_datos_validos_liquido_contenedor
-            DECLARE @resultado TABLE (
-                id_liquido INT,
-                codigo VARCHAR(32), 
-                id_tipo INT,
-                cantidad_total_lts DECIMAL(18, 4),
-                fecha_produccion DATE,
-                id_proveedor INT,
-                alcohol_vol_20_c_porcentaje DECIMAL(18, 5),
-                extracto_seco_gL DECIMAL(18, 5),
-                metanol_mg_100mlAA DECIMAL(18, 5),
-                alcoholes_superiores_mg_100mlAA DECIMAL(18, 5),
-                aldehidos_mg_100mlAA DECIMAL(18, 5),
-                furfural_mg_100mlAA DECIMAL(18, 5),
-                plomo_mg_L DECIMAL(18, 5),
-                arsenico_mg_L DECIMAL(18, 5),
-                cantidad_liquido_dentro_lts DECIMAL(18, 4),
-                ultimo_id_liquido_contenedor INT
-            );
-
-            -- Insertar los resultados del procedimiento en la tabla temporal
-            INSERT INTO @resultado
-            EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = @id_contenedor_componente;
-
-            -- Obtener el ID del líquido componente
-            SELECT @id_liquido_componente = id_liquido
-            FROM @resultado;
-
-            -- Verificar que el ID del líquido componente no sea NULL
-            IF @id_liquido_componente IS NULL
-            BEGIN
-                ROLLBACK TRANSACTION;
-                THROW 50001, 'Error: El id_liquido obtenido es NULL o no válido.', 1;
-            END
-
-            -- Acumular los valores para cada componente
-            SELECT @extracto_seco_gL_total = @extracto_seco_gL_total + (r.extracto_seco_gL * @cantidad_liquido_componente_lts),
-                   @alcohol_vol_20_c_porcentaje_total = @alcohol_vol_20_c_porcentaje_total + (r.alcohol_vol_20_c_porcentaje * @cantidad_liquido_componente_lts),
-                   @metanol_mg_100mlAA_total = @metanol_mg_100mlAA_total + (r.metanol_mg_100mlAA * @cantidad_liquido_componente_lts * r.alcohol_vol_20_c_porcentaje),
-                   @alcoholes_superiores_mg_100mlAA_total = @alcoholes_superiores_mg_100mlAA_total + (r.alcoholes_superiores_mg_100mlAA * @cantidad_liquido_componente_lts * r.alcohol_vol_20_c_porcentaje),
-                   @aldehidos_mg_100mlAA_total = @aldehidos_mg_100mlAA_total + (r.aldehidos_mg_100mlAA * @cantidad_liquido_componente_lts * r.alcohol_vol_20_c_porcentaje),
-                   @furfural_mg_100mlAA_total = @furfural_mg_100mlAA_total + (r.furfural_mg_100mlAA * @cantidad_liquido_componente_lts * r.alcohol_vol_20_c_porcentaje),
-                   @plomo_mg_L_total = @plomo_mg_L_total + (r.plomo_mg_L * @cantidad_liquido_componente_lts),
-                   @arsenico_mg_L_total = @arsenico_mg_L_total + (r.arsenico_mg_L * @cantidad_liquido_componente_lts)
-            FROM @resultado r;
-
-            -- Calcular el porcentaje del componente
-            SET @porcentaje = (@cantidad_liquido_componente_lts / @cantidad_generada_lts) * 100;
-
-            -- Insertar en la tabla combinaciones_detalle
-            INSERT INTO combinaciones_detalle
-            (
-                id_combinacion,
-                id_liquido,
-                cantidad_lts,
-                porcentaje
-            )
-            VALUES
-            (
-                @id_combinacion,
-                @id_liquido_componente,
-                @cantidad_liquido_componente_lts,
-                @porcentaje
-            );
-
-            -- Actualizar las cantidades en los contenedores de cada componente
-            UPDATE 
-                t
-            SET 
-                t.cantidad_liquido_lts = t.cantidad_liquido_lts - @cantidad_liquido_componente_lts
-            FROM
-                transacciones_liquido_contenedor t
-            WHERE
-                t.id_contenedor = @id_contenedor_componente AND t.id_liquido = @id_liquido_componente;
-
-            FETCH NEXT FROM cur INTO @id_contenedor_componente, @cantidad_liquido_componente_lts;
-        END;
-
-        CLOSE cur;
-        DEALLOCATE cur;
-
-        -- Calcular el valor final del nuevo líquido para todos los componentes
-        SET @extracto_seco_gL_total = @extracto_seco_gL_total / @cantidad_generada_lts;
-        SET @alcohol_vol_20_c_porcentaje_total = @alcohol_vol_20_c_porcentaje_total / @cantidad_generada_lts;
-        SET @metanol_mg_100mlAA_total = @metanol_mg_100mlAA_total / (@cantidad_generada_lts * @alcohol_vol_20_c_porcentaje_total);
-        SET @alcoholes_superiores_mg_100mlAA_total = @alcoholes_superiores_mg_100mlAA_total / (@cantidad_generada_lts * @alcohol_vol_20_c_porcentaje_total);
-        SET @aldehidos_mg_100mlAA_total = @aldehidos_mg_100mlAA_total / (@cantidad_generada_lts * @alcohol_vol_20_c_porcentaje_total);
-        SET @furfural_mg_100mlAA_total = @furfural_mg_100mlAA_total / (@cantidad_generada_lts * @alcohol_vol_20_c_porcentaje_total);
-        SET @plomo_mg_L_total = @plomo_mg_L_total / @cantidad_generada_lts;
-        SET @arsenico_mg_L_total = @arsenico_mg_L_total / @cantidad_generada_lts;
-
-        -- Insertar el nuevo registro en la tabla liquidos después de calcular todas las propiedades
-        INSERT INTO liquidos
-        (
-            codigo,
-            id_tipo,
-            cantidad_total_lts,
-            id_proveedor,
-            extracto_seco_gL, 
-            alcohol_vol_20_c_porcentaje, 
-            metanol_mg_100mlAA, 
-            alcoholes_superiores_mg_100mlAA, 
-            aldehidos_mg_100mlAA, 
-            furfural_mg_100mlAA, 
-            plomo_mg_L, 
-            arsenico_mg_L, 
-            orden_produccion
-        )
-        VALUES
-        (
-            @nombre,
-            @id_tipo,
-            @cantidad_generada_lts,
-            @id_proveedor,
-            @extracto_seco_gL_total, 
-            @alcohol_vol_20_c_porcentaje_total, 
-            @metanol_mg_100mlAA_total, 
-            @alcoholes_superiores_mg_100mlAA_total, 
-            @aldehidos_mg_100mlAA_total, 
-            @furfural_mg_100mlAA_total, 
-            @plomo_mg_L_total, 
-            @arsenico_mg_L_total, 
-            @orden_produccion
-        );
-
-        -- Actualizar la tabla combinaciones con el id_liquido_combinado
-        SET @id_liquido_combinado = SCOPE_IDENTITY();
-
-        UPDATE combinaciones
-        SET id_liquido_combinado = @id_liquido_combinado
-        WHERE id_combinacion = @id_combinacion;
-
-        -- Confirmar la transacción
-        COMMIT TRANSACTION;
-    END TRY
-    BEGIN CATCH
-        -- Deshacer todo en caso de error
-        ROLLBACK TRANSACTION;
-        THROW;
-    END CATCH;
-END;
-GO
-
-
-
-IF OBJECT_ID('dbo.sp_insertar_liquido_combinado_c', 'P') IS NOT NULL
-    DROP PROCEDURE dbo.sp_insertar_liquido_combinado_c;
-GO
-
-CREATE PROCEDURE sp_insertar_liquido_combinado_c
-    @nombre VARCHAR(32),
-    @id_tipo INT,
-    @id_proveedor INT,
     @orden_produccion INT,
     @id_estatus INT,
     @id_contenedor_destino INT,
@@ -1240,37 +724,6 @@ END;
 GO
 
 
-SELECT * FROM transacciones_liquido_contenedor;
-SELECT * FROM liquidos;
-SELECT * FROM combinaciones;
-SELECT * FROM combinaciones_detalle;
-
-EXEC sp_insertar_liquido_combinado_c
-    @nombre = 'prueba', 
-    @id_tipo = 2, 
-    @id_proveedor = 3, 
-    @orden_produccion = 1040, 
-    @id_estatus = 2, 
-    @id_contenedor_destino = 7, 
-    @persona_encargada = 'manolo@gmail.com',
-    @composicion_liquidos_json =
-        N'[
-        {
-            "id_contenedor_componente": 6,
-            "cantidad_liquido_componente_lts": 5000.00
-        },
-        {
-            "id_contenedor_componente": 7,
-            "cantidad_liquido_componente_lts": 5000.00
-        }
-        ]';
-
-EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = 7;
-EXEC sp_obtener_datos_validos_liquido_contenedor @id_contenedor = 6;
-
-SELECT * FROM transacciones_liquido_contenedor;
-
-
 
 
 
@@ -1337,6 +790,52 @@ BEGIN
         liquidos l
     WHERE 
         l.id_liquido = @ultimo_id_liquido
+END;
+GO
+
+
+
+
+IF OBJECT_ID('dbo.sp_obtener_propiedades_contenedor_liquido', 'P') IS NOT NULL
+DROP PROCEDURE dbo.sp_obtener_propiedades_contenedor_liquido;
+GO
+
+CREATE PROCEDURE sp_obtener_propiedades_contenedor_liquido
+    @id_contenedor INT
+AS
+BEGIN
+    SELECT TOP 1
+        t.id_liquido_contenedor,
+        l.id_liquido,
+        t.cantidad_liquido_lts,
+        tc.capacidad_lts,
+        l.codigo,
+        e.descripcion,
+        l.fecha_produccion,
+        l.alcohol_vol_20_c_porcentaje,
+        l.extracto_seco_gL,
+        l.metanol_mg_100mlAA,
+        l.alcoholes_superiores_mg_100mlAA,
+        l.aldehidos_mg_100mlAA,
+        l.furfural_mg_100mlAA,
+        l.plomo_mg_L,
+        l.arsenico_mg_L,
+        l.cantidad_total_lts,
+        l.orden_produccion
+    FROM
+        transacciones_liquido_contenedor t
+    JOIN
+        contenedores c ON c.id_contenedor = t.id_contenedor
+    JOIN
+        tipos_contenedor tc ON tc.id_tipo_contenedor = c.id_tipo
+    JOIN
+        liquidos l ON l.id_liquido = t.id_liquido
+    JOIN
+        estatus_liquido e ON e.id_estatus_liquido = t.id_estatus
+    WHERE
+        c.id_contenedor = @id_contenedor
+    ORDER BY 
+        t.id_liquido_contenedor DESC;
 END;
 GO
 
@@ -1507,6 +1006,7 @@ IF OBJECT_ID('dbo.sp_obtener_trazabilidad_liquido_agrupado', 'P') IS NOT NULL
 DROP PROCEDURE sp_obtener_trazabilidad_liquido_agrupado;
 GO
 
+
 CREATE PROCEDURE sp_obtener_trazabilidad_liquido_agrupado
     @id_contenedor INT
 AS
@@ -1528,6 +1028,18 @@ BEGIN
     DECLARE @id_liquido_b INT;
     SELECT @id_liquido_b = id_liquido FROM #TempTable;
 
+    -- Crear tabla temporal para los resultados antes de la CTE
+    CREATE TABLE #TempResult (
+        id_liquido_componente INT,
+        codigo_componente VARCHAR(32),
+        tipo_componente INT,
+        cantidad_lts DECIMAL(18, 2),
+        total_cantidad_combinacion DECIMAL(18, 2),
+        porcentaje_recursivo DECIMAL(18, 2),
+        nivel INT,
+        traza INT
+    );
+
     -- CTE para realizar el trazado del líquido
     WITH CTE_trazabilidad AS (
         SELECT
@@ -1541,11 +1053,11 @@ BEGIN
             lc.codigo AS codigo_componente,
             lc.id_tipo AS tipo_componente,
             td.cantidad_lts,
-            SUM(td.cantidad_lts) OVER (PARTITION BY t.id_combinacion) AS total_cantidad_combinacion, -- Suma de cantidad total de la combinación
-            td.cantidad_lts / SUM(td.cantidad_lts) OVER (PARTITION BY t.id_combinacion) * 100 AS porcentaje, -- Cálculo del porcentaje
-            CAST(td.cantidad_lts / SUM(td.cantidad_lts) OVER (PARTITION BY t.id_combinacion) * 100 AS DECIMAL(18, 2)) AS porcentaje_recursivo, -- Inicializar porcentaje recursivo
+            SUM(td.cantidad_lts) OVER (PARTITION BY t.id_combinacion) AS total_cantidad_combinacion,
+            td.cantidad_lts / SUM(td.cantidad_lts) OVER (PARTITION BY t.id_combinacion) * 100 AS porcentaje,
+            CAST(td.cantidad_lts / SUM(td.cantidad_lts) OVER (PARTITION BY t.id_combinacion) * 100 AS DECIMAL(18, 2)) AS porcentaje_recursivo,
             1 AS nivel,
-            ROW_NUMBER() OVER (ORDER BY t.id_combinacion) AS traza  -- Asignar traza a nivel 1
+            ROW_NUMBER() OVER (ORDER BY t.id_combinacion) AS traza
         FROM 
             combinaciones t
         JOIN
@@ -1555,7 +1067,7 @@ BEGIN
         JOIN
             liquidos lc ON td.id_liquido = lc.id_liquido
         WHERE
-            l.id_liquido = @id_liquido_b 
+            l.id_liquido = @id_liquido_b
         
         UNION ALL
 
@@ -1572,9 +1084,9 @@ BEGIN
             td.cantidad_lts,
             SUM(td.cantidad_lts) OVER (PARTITION BY t.id_combinacion) AS total_cantidad_combinacion,
             td.cantidad_lts / SUM(td.cantidad_lts) OVER (PARTITION BY t.id_combinacion) * 100 AS porcentaje,
-            CAST(td.cantidad_lts / SUM(td.cantidad_lts) OVER (PARTITION BY t.id_combinacion) * 100 * cte.porcentaje_recursivo / 100 AS DECIMAL(18, 2)) AS porcentaje_recursivo, -- Calcular el porcentaje recursivo
+            CAST(td.cantidad_lts / SUM(td.cantidad_lts) OVER (PARTITION BY t.id_combinacion) * 100 * cte.porcentaje_recursivo / 100 AS DECIMAL(18, 2)) AS porcentaje_recursivo,
             cte.nivel + 1,
-            cte.traza  -- Propagar la traza del nivel superior
+            cte.traza
         FROM
             CTE_trazabilidad cte
         JOIN
@@ -1587,16 +1099,17 @@ BEGIN
             liquidos lc ON td.id_liquido = lc.id_liquido
     )
 
-    -- Seleccionar los datos agrupados por id_liquido_componente y sumar las cantidades duplicadas
+    -- Insertar los resultados de la CTE en la tabla temporal
+    INSERT INTO #TempResult
     SELECT 
         id_liquido_componente,
         codigo_componente,
         tipo_componente,
-        SUM(cantidad_lts) AS cantidad_lts,  -- Sumar la cantidad de litros por id_liquido_componente
+        SUM(cantidad_lts) AS cantidad_lts,
         SUM(total_cantidad_combinacion) AS total_cantidad_combinacion,
-        SUM(porcentaje_recursivo) AS porcentaje_recursivo,  -- Sumar el porcentaje recursivo por id_liquido_componente
-        MIN(nivel) AS nivel,  -- Tomar el nivel más bajo
-        MIN(traza) AS traza   -- Tomar la traza más baja
+        SUM(porcentaje_recursivo) AS porcentaje_recursivo,
+        MIN(nivel) AS nivel,
+        MIN(traza) AS traza
     FROM 
         CTE_trazabilidad
     GROUP BY 
@@ -1606,8 +1119,47 @@ BEGIN
     ORDER BY 
         id_liquido_componente;
     
-    -- Limpiar la tabla temporal
+    CREATE TABLE #TempActualTable (
+        id_liquido_contenedor INT,
+        id_estatus INT,
+        id_liquido INT,
+        cantidad_total_lts DECIMAL(18, 2),
+        fecha_produccion DATE,
+        orden_produccion INT,
+        cantidad_liquido_lts DECIMAL(18, 2),
+        id_tipo INT,
+        capacidad_lts DECIMAL(18, 2),
+        codigo VARCHAR(32),
+        descripcion VARCHAR(32)
+    );
+
+    -- Obtener el líquido actual y almacenarlo en la tabla temporal
+    INSERT INTO #TempActualTable
+    EXEC sp_obtener_info_contenedor_liquido @id_contenedor = @id_contenedor;
+
+    -- Insertar el líquido actual en el conjunto de trazabilidad
+    INSERT INTO #TempResult (id_liquido_componente, codigo_componente, tipo_componente, cantidad_lts, total_cantidad_combinacion, porcentaje_recursivo, nivel, traza)
+    SELECT
+        id_liquido AS id_liquido_componente,
+        codigo AS codigo_componente,
+        id_tipo AS tipo_componente,
+        cantidad_liquido_lts AS cantidad_lts,
+        cantidad_total_lts AS total_cantidad_combinacion,
+        100 AS porcentaje_recursivo,
+        0 AS nivel,
+        0 AS traza
+    FROM
+        #TempActualTable;
+
+    -- Limpiar las tablas temporales
     DROP TABLE #TempTable;
+    DROP TABLE #TempActualTable;
+
+    -- Devolver el resultado final
+    SELECT * FROM #TempResult;
+
+    -- Limpiar la tabla temporal de resultado
+    DROP TABLE #TempResult;
 END;
 GO
 
@@ -2054,3 +1606,4 @@ BEGIN
     DROP TABLE #TempTable;
 END;
 GO
+
