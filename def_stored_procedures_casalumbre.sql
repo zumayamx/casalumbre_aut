@@ -499,6 +499,14 @@ BEGIN
         DECLARE @furfural_mg_100mlAA_total DECIMAL(18, 5) = 0;
         DECLARE @plomo_mg_L_total DECIMAL(18, 5) = 0;
         DECLARE @arsenico_mg_L_total DECIMAL(18, 5) = 0;
+        DECLARE @alcohol_sum DECIMAL(18, 5) = 0;
+        DECLARE @furfural_sum DECIMAL(18, 5) = 0;
+        DECLARE @extracto_seco_sum DECIMAL(18, 5) = 0;
+        DECLARE @metanol_sum DECIMAL(18, 5) = 0;
+        DECLARE @alcoholes_sup_sum DECIMAL(18, 5) = 0;
+        DECLARE @aldehidos_sum DECIMAL(18, 5) = 0;
+        DECLARE @plomo_sum DECIMAL(18, 5) = 0;
+        DECLARE @arsenico_sum DECIMAL(18, 5) = 0;
 
         -- Calcular la cantidad total de los componentes del líquido en litros
         SELECT @cantidad_total_componentes = SUM(cantidad_liquido_componente_lts)
@@ -597,16 +605,30 @@ BEGIN
                 THROW 50001, 'Error: El id_liquido obtenido es NULL o no válido.', 1;
             END
 
+            DECLARE @mla DECIMAL(18, 5) = 0;
+            SELECT @mla = r.alcohol_vol_20_c_porcentaje FROM @resultado r;
+
+            -- @alcohol_vol_20_c_porcentaje_total + 
             -- Acumular los valores para cada componente
-            SELECT @extracto_seco_gL_total = @extracto_seco_gL_total + (r.extracto_seco_gL * @cantidad_liquido_componente_lts),
-                   @alcohol_vol_20_c_porcentaje_total = @alcohol_vol_20_c_porcentaje_total + (r.alcohol_vol_20_c_porcentaje * @cantidad_liquido_componente_lts),
-                   @metanol_mg_100mlAA_total = @metanol_mg_100mlAA_total + (r.metanol_mg_100mlAA * @cantidad_liquido_componente_lts * r.alcohol_vol_20_c_porcentaje),
-                   @alcoholes_superiores_mg_100mlAA_total = @alcoholes_superiores_mg_100mlAA_total + (r.alcoholes_superiores_mg_100mlAA * @cantidad_liquido_componente_lts * r.alcohol_vol_20_c_porcentaje),
-                   @aldehidos_mg_100mlAA_total = @aldehidos_mg_100mlAA_total + (r.aldehidos_mg_100mlAA * @cantidad_liquido_componente_lts * r.alcohol_vol_20_c_porcentaje),
-                   @furfural_mg_100mlAA_total = @furfural_mg_100mlAA_total + (r.furfural_mg_100mlAA * @cantidad_liquido_componente_lts * r.alcohol_vol_20_c_porcentaje),
-                   @plomo_mg_L_total = @plomo_mg_L_total + (r.plomo_mg_L * @cantidad_liquido_componente_lts),
-                   @arsenico_mg_L_total = @arsenico_mg_L_total + (r.arsenico_mg_L * @cantidad_liquido_componente_lts)
+            SELECT @extracto_seco_gL_total = (r.extracto_seco_gL * @cantidad_liquido_componente_lts),
+                   @alcohol_vol_20_c_porcentaje_total = (r.alcohol_vol_20_c_porcentaje * @cantidad_liquido_componente_lts),
+                   @metanol_mg_100mlAA_total = (r.metanol_mg_100mlAA * @cantidad_liquido_componente_lts * r.alcohol_vol_20_c_porcentaje),
+                   @alcoholes_superiores_mg_100mlAA_total = (r.alcoholes_superiores_mg_100mlAA * @cantidad_liquido_componente_lts * r.alcohol_vol_20_c_porcentaje),
+                   @aldehidos_mg_100mlAA_total = (r.aldehidos_mg_100mlAA * @cantidad_liquido_componente_lts * r.alcohol_vol_20_c_porcentaje),
+                   @furfural_mg_100mlAA_total = (r.furfural_mg_100mlAA * @cantidad_liquido_componente_lts * r.alcohol_vol_20_c_porcentaje),
+                   @plomo_mg_L_total = (r.plomo_mg_L * @cantidad_liquido_componente_lts),
+                   @arsenico_mg_L_total = (r.arsenico_mg_L * @cantidad_liquido_componente_lts)
             FROM @resultado r;
+
+            
+            SET @alcohol_sum = @alcohol_sum + @alcohol_vol_20_c_porcentaje_total;
+            SET @furfural_sum = @furfural_sum + @furfural_mg_100mlAA_total;
+            SET @extracto_seco_sum = @extracto_seco_sum + @extracto_seco_gL_total;
+            SET @metanol_sum = @metanol_sum + @metanol_mg_100mlAA_total;
+            SET @alcoholes_sup_sum = @alcoholes_sup_sum + @alcoholes_superiores_mg_100mlAA_total;
+            SET @aldehidos_sum = @aldehidos_sum + @aldehidos_mg_100mlAA_total;
+            SET @plomo_sum = @plomo_sum + @plomo_mg_L_total;
+            SET @arsenico_sum = @arsenico_sum + @arsenico_mg_L_total;
 
             -- Calcular el porcentaje del componente
             SET @porcentaje = (@cantidad_liquido_componente_lts / @cantidad_generada_lts) * 100;
@@ -644,14 +666,14 @@ BEGIN
         DEALLOCATE cur;
 
         -- Calcular el valor final del nuevo líquido para todos los componentes
-        SET @extracto_seco_gL_total = @extracto_seco_gL_total / @cantidad_generada_lts;
-        SET @alcohol_vol_20_c_porcentaje_total = @alcohol_vol_20_c_porcentaje_total / @cantidad_generada_lts;
-        SET @metanol_mg_100mlAA_total = @metanol_mg_100mlAA_total / (@cantidad_generada_lts * @alcohol_vol_20_c_porcentaje_total);
-        SET @alcoholes_superiores_mg_100mlAA_total = @alcoholes_superiores_mg_100mlAA_total / (@cantidad_generada_lts * @alcohol_vol_20_c_porcentaje_total);
-        SET @aldehidos_mg_100mlAA_total = @aldehidos_mg_100mlAA_total / (@cantidad_generada_lts * @alcohol_vol_20_c_porcentaje_total);
-        SET @furfural_mg_100mlAA_total = @furfural_mg_100mlAA_total / (@cantidad_generada_lts * @alcohol_vol_20_c_porcentaje_total);
-        SET @plomo_mg_L_total = @plomo_mg_L_total / @cantidad_generada_lts;
-        SET @arsenico_mg_L_total = @arsenico_mg_L_total / @cantidad_generada_lts;
+        SET @extracto_seco_gL_total = @extracto_seco_sum / @cantidad_generada_lts;
+        SET @alcohol_vol_20_c_porcentaje_total = @alcohol_sum / @cantidad_generada_lts;
+        SET @metanol_mg_100mlAA_total = @metanol_sum/ (@cantidad_generada_lts * @alcohol_vol_20_c_porcentaje_total);
+        SET @alcoholes_superiores_mg_100mlAA_total = @alcoholes_sup_sum/ (@cantidad_generada_lts * @alcohol_vol_20_c_porcentaje_total);
+        SET @aldehidos_mg_100mlAA_total = @aldehidos_sum / (@cantidad_generada_lts * @alcohol_vol_20_c_porcentaje_total);
+        SET @furfural_mg_100mlAA_total = @furfural_sum / (@cantidad_generada_lts * @alcohol_vol_20_c_porcentaje_total);
+        SET @plomo_mg_L_total = @plomo_sum / @cantidad_generada_lts;
+        SET @arsenico_mg_L_total = @arsenico_sum / @cantidad_generada_lts;
 
         -- Insertar el nuevo registro en la tabla liquidos después de calcular todas las propiedades
         INSERT INTO liquidos
@@ -1002,6 +1024,7 @@ GO
 
 
 
+-- Procedimiento para obtener la trazabilidad de un líquido agrpando los duplicados
 IF OBJECT_ID('dbo.sp_obtener_trazabilidad_liquido_agrupado', 'P') IS NOT NULL
 DROP PROCEDURE sp_obtener_trazabilidad_liquido_agrupado;
 GO
@@ -1216,13 +1239,15 @@ CREATE PROCEDURE sp_insertar_producto_terminado
     @persona_encargada VARCHAR(32)
 AS
 BEGIN
-    -- Variable para almacenar el id_liquido y la cantidad actual de líquido
+    -- Variable para almacenar el id_liquido y la cantidad actual de líquido, probablemente cambiar a DECIMAL(18, 4)
     DECLARE @id_liquido_dentro INT;
     DECLARE @cantidad_restante_lts INT;
+    DECLARE @id_liquido_contenedor INT;
 
     -- Obtener el id_liquido más reciente del contenedor especificado
     SELECT TOP 1
-        @id_liquido_dentro = t.id_liquido
+        @id_liquido_dentro = t.id_liquido,
+        @id_liquido_contenedor = t.id_liquido_contenedor
     FROM 
         transacciones_liquido_contenedor t
     WHERE
@@ -1234,21 +1259,20 @@ BEGIN
     UPDATE
         transacciones_liquido_contenedor
     SET 
-        cantidad_liquido_lts = cantidad_liquido_lts - @cantidad_terminada_lts
+        cantidad_liquido_lts = cantidad_liquido_lts - @cantidad_terminada_lts,
+        id_liquido = NULL
     WHERE
-        id_contenedor = @id_contenedor
-        AND id_liquido = @id_liquido_dentro;
+        id_liquido_contenedor = @id_liquido_contenedor;
 
     -- Obtener la cantidad restante después de la actualización
     SELECT @cantidad_restante_lts = cantidad_liquido_lts
     FROM 
         transacciones_liquido_contenedor
     WHERE
-        id_contenedor = @id_contenedor
-        AND id_liquido = @id_liquido_dentro;
+        id_liquido_contenedor = @id_liquido_contenedor;
 
-    -- Si la cantidad restante es igual a 0, actualizar el estado del contenedor
-    IF @cantidad_restante_lts = 0
+    -- Si la cantidad restante es igual o menor a 0, actualizar el estado del contenedor
+    IF @cantidad_restante_lts <= 0
     BEGIN
         -- Llamar al procedimiento almacenado para actualizar el estatus
         EXEC sp_actualizar_estatus_contenedor 
@@ -1587,15 +1611,15 @@ BEGIN
     EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = @id_contenedor;
 
     -- Verificar si la cantidad de líquido es mayor a 0 o no está definida
-    IF EXISTS (
-        SELECT 1
-        FROM #TempTable
-        WHERE ISNULL(cantidad_liquido_lts, 0) > 0
-    )
-    BEGIN
-        RAISERROR('El contenedor con ID %d no está vacío.', 16, 1, @id_contenedor);
-        RETURN;
-    END
+    -- IF EXISTS (
+    --     SELECT 1
+    --     FROM #TempTable
+    --     WHERE ISNULL(cantidad_liquido_lts, 0) > 0
+    -- )
+    -- BEGIN
+    --     RAISERROR('El contenedor con ID %d no está vacío.', 16, 1, @id_contenedor);
+    --     RETURN;
+    -- END
 
     -- Si el contenedor está vacío, actualizar el estatus
     UPDATE contenedores
