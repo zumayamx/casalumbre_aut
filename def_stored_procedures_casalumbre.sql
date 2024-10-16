@@ -76,23 +76,19 @@ BEGIN
     INSERT INTO #TempTable
     EXEC sp_obtener_datos_contenedor_liquido @id_contenedor = @id_contenedor;
 
-    -- Verificar si la cantidad de líquido es 0 o NULL
-    IF EXISTS (
-        SELECT 1
-        FROM #TempTable
-        WHERE cantidad_liquido_lts > 0
-    )
-    BEGIN
-        RAISERROR('El contenedor con ID %d no está vacío.', 16, 1, @id_contenedor);
-        RETURN;
-    END
+    -- Declarar variable para almacenar la cantidad de líquido
+    DECLARE @cantidad_liquido DECIMAL(18, 2);
+
+    -- Asignar la cantidad de líquido a la variable
+    SELECT @cantidad_liquido = cantidad_liquido_lts FROM #TempTable;
 
     -- Si el contenedor está vacío o la cantidad es NULL, seleccionar los datos del contenedor
     SELECT
         c.id_contenedor, 
         c.nombre,
         c.id_estatus,
-        t.capacidad_lts -- Asumiendo que capacidad_lts está en la tabla tipos_contenedor
+        t.capacidad_lts, -- Asumiendo que capacidad_lts está en la tabla tipos_contenedor
+        @cantidad_liquido AS cantidad_liquido
     FROM 
         contenedores c
     JOIN 
@@ -101,6 +97,9 @@ BEGIN
         c.id_contenedor = @id_contenedor
         AND c.fecha_baja IS NULL
         AND c.id_estatus < 3;
+
+    -- Limpiar la tabla temporal
+    DROP TABLE #TempTable;
 
 END;
 GO
@@ -608,7 +607,6 @@ BEGIN
             DECLARE @mla DECIMAL(18, 5) = 0;
             SELECT @mla = r.alcohol_vol_20_c_porcentaje FROM @resultado r;
 
-            -- @alcohol_vol_20_c_porcentaje_total + 
             -- Acumular los valores para cada componente
             SELECT @extracto_seco_gL_total = (r.extracto_seco_gL * @cantidad_liquido_componente_lts),
                    @alcohol_vol_20_c_porcentaje_total = (r.alcohol_vol_20_c_porcentaje * @cantidad_liquido_componente_lts),
