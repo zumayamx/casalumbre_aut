@@ -118,9 +118,9 @@ CREATE PROCEDURE sp_insertar_liquido
     @id_tipo INT,
     @cantidad_total_lts DECIMAL(10, 2),
     @id_proveedor INT,
-    @metanol_mg_100mlAA DECIMAL(5,2),
-    @alcoholes_superiores_mg_100mlAA DECIMAL(5, 2),
-    @porcentaje_alcohol_vol DECIMAL(5, 2),
+    @metanol_mg_100mlAA DECIMAL(5,2) = NULL,
+    @alcoholes_superiores_mg_100mlAA DECIMAL(5, 2) = NULL,
+    @porcentaje_alcohol_vol DECIMAL(5, 2) = NULL,
     @orden_produccion INT,
     @extracto_seco_gL DECIMAL(18, 5) = NULL, -- Parámetros opcionales con valores por defecto
     @aldehidos_mg_100mlAA DECIMAL(18, 5) = NULL,
@@ -1629,3 +1629,95 @@ BEGIN
 END;
 GO
 
+--- STABLE VERSION OF TRANSPONSE PROCEDURE PROPIERTIES
+porque este procedimeinto : SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[sp_obtener_propiedades_contenedor_liquido_transpuesta]
+    @id_contenedor INT
+AS
+BEGIN
+    -- Crear una tabla temporal para almacenar las propiedades del líquido
+    CREATE TABLE #TempPropiedades (
+        id_liquido_contenedor INT,
+        id_liquido INT,
+        cantidad_liquido_lts DECIMAL(18, 2),
+        capacidad_lts DECIMAL(18, 2),
+        codigo VARCHAR(50),
+        descripcion VARCHAR(100),
+        fecha_produccion DATE,
+        alcohol_vol_20_c_porcentaje DECIMAL(18, 5),
+        extracto_seco_gL DECIMAL(18, 5),
+        metanol_mg_100mlAA DECIMAL(18, 5),
+        alcoholes_superiores_mg_100mlAA DECIMAL(18, 5),
+        aldehidos_mg_100mlAA DECIMAL(18, 5),
+        furfural_mg_100mlAA DECIMAL(18, 5),
+        plomo_mg_L DECIMAL(18, 5),
+        arsenico_mg_L DECIMAL(18, 5),
+        cantidad_total_lts DECIMAL(18, 2),
+        orden_produccion INT
+    );
+
+    -- Insertar los resultados del SELECT en la tabla temporal
+    INSERT INTO #TempPropiedades
+    SELECT TOP 1
+        t.id_liquido_contenedor,
+        l.id_liquido,
+        t.cantidad_liquido_lts,
+        tc.capacidad_lts,
+        l.codigo,
+        e.descripcion,
+        l.fecha_produccion,
+        l.alcohol_vol_20_c_porcentaje,
+        l.extracto_seco_gL,
+        l.metanol_mg_100mlAA,
+        l.alcoholes_superiores_mg_100mlAA,
+        l.aldehidos_mg_100mlAA,
+        l.furfural_mg_100mlAA,
+        l.plomo_mg_L,
+        l.arsenico_mg_L,
+        l.cantidad_total_lts,
+        l.orden_produccion
+    FROM
+        transacciones_liquido_contenedor t
+    JOIN
+        contenedores c ON c.id_contenedor = t.id_contenedor
+    JOIN
+        tipos_contenedor tc ON tc.id_tipo_contenedor = c.id_tipo
+    JOIN
+        liquidos l ON l.id_liquido = t.id_liquido
+    JOIN
+        estatus_liquido e ON e.id_estatus_liquido = t.id_estatus
+    WHERE
+        c.id_contenedor = @id_contenedor
+    ORDER BY 
+        t.id_liquido_contenedor DESC;
+
+    -- Transponer los datos almacenados en la tabla temporal
+    SELECT 'VOLUMEN' AS propiedad, 'L' AS unidad_medida, CAST(cantidad_liquido_lts AS VARCHAR(50)) AS valor FROM #TempPropiedades
+    UNION
+    SELECT 'CAPACIDAD CONTENEDOR', 'L', CAST(capacidad_lts AS VARCHAR(50)) FROM #TempPropiedades
+    UNION
+    SELECT 'ALC. VOL. A 20°C', '%', CAST(alcohol_vol_20_c_porcentaje AS VARCHAR(50)) FROM #TempPropiedades
+    UNION
+    SELECT 'EXTRACTO SECO', 'g/L', CAST(extracto_seco_gL AS VARCHAR(50)) FROM #TempPropiedades
+    UNION
+    SELECT 'METANOL', 'mg/100ml AA', CAST(metanol_mg_100mlAA AS VARCHAR(50)) FROM #TempPropiedades
+    UNION
+    SELECT 'ALCOHOLES SUPERIORES', 'mg/100ml AA', CAST(alcoholes_superiores_mg_100mlAA AS VARCHAR(50)) FROM #TempPropiedades
+    UNION
+    SELECT 'ALDEHIDOS', 'mg/100ml AA', CAST(aldehidos_mg_100mlAA AS VARCHAR(50)) FROM #TempPropiedades
+    UNION
+    SELECT 'FURFURAL', 'mg/100ml AA', CAST(furfural_mg_100mlAA AS VARCHAR(50)) FROM #TempPropiedades
+    UNION
+    SELECT 'PLOMO', 'mg/L', CAST(plomo_mg_L AS VARCHAR(50)) FROM #TempPropiedades
+    UNION
+    SELECT 'ARSÉNICO', 'mg/L', CAST(arsenico_mg_L AS VARCHAR(50)) FROM #TempPropiedades
+
+    -- Eliminar la tabla temporal
+    DROP TABLE #TempPropiedades;
+END;
+GO
+ me regesa los datos en este orden, es decir yo pensaria que en la primera fila vendria volumen como en el procedimeinto
