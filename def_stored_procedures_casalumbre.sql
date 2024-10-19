@@ -1324,6 +1324,23 @@ GO
 
 
 
+-- Procedimiento almacenado para obtener el nombre de un contenedor por su ID
+IF OBJECT_ID('dbo.sp_obtener_nombre_conededor_id', 'P') IS NOT NULL
+DROP PROCEDURE dbo.sp_obtener_nombre_conededor_id;
+GO
+
+CREATE PROCEDURE sp_obtener_nombre_conededor_id
+    @id_contenedor INT
+AS
+BEGIN
+    SELECT nombre FROM contenedores WHERE id_contenedor = @id_contenedor;
+END;
+GO
+
+
+
+
+
 ------------------------- PROCEDIMINETOS ALMACENADOS PARA LA FUNCIÓN SALIDA DE PRODUCTO EN POWER APPS -------------------------------
 
 -- Procedimiento almacenado para insertar un producto termiando
@@ -1438,7 +1455,7 @@ GO
 
 
 -- Procedimiento para obtener los tipos de los contenedor, estos definen su capacidad
-IF OBJECT_ID('dbo.sp_ obtener_tipos_contenedor', 'P') IS NOT NULL
+IF OBJECT_ID('dbo.sp_obtener_tipos_contenedor', 'P') IS NOT NULL
 DROP PROCEDURE dbo.sp_obtener_tipos_contenedor;
 GO
 
