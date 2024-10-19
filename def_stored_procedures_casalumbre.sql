@@ -126,7 +126,12 @@ CREATE PROCEDURE sp_insertar_liquido
     @aldehidos_mg_100mlAA DECIMAL(18, 5) = NULL,
     @furfural_mg_100mlAA DECIMAL(18, 5) = NULL,
     @plomo_mg_L DECIMAL(18, 5) = NULL,
-    @arsenico_mg_L DECIMAL(18, 5) = NULL
+    @arsenico_mg_L DECIMAL(18, 5) = NULL,
+    @id_tipo_variedad INT = NULL,
+    @id_tipo_mezcal INT = NULL,
+    @id_tipo_corte INT = NULL,
+    @id_tipo_marca INT = NULL,
+    @id_tipo_origen INT = NULL
 AS
 BEGIN
     DECLARE @id_nuevo_liquido INT;
@@ -146,7 +151,12 @@ BEGIN
         aldehidos_mg_100mlAA,
         furfural_mg_100mlAA,
         plomo_mg_L,
-        arsenico_mg_L
+        arsenico_mg_L,
+        id_tipo_variedad,
+        id_tipo_mezcal,
+        id_tipo_corte,
+        id_tipo_marca,
+        id_tipo_origen
     )
     VALUES
     (
@@ -162,7 +172,12 @@ BEGIN
         @aldehidos_mg_100mlAA,
         @furfural_mg_100mlAA,
         @plomo_mg_L,
-        @arsenico_mg_L
+        @arsenico_mg_L,
+        @id_tipo_variedad,
+        @id_tipo_mezcal,
+        @id_tipo_corte,
+        @id_tipo_marca,
+        @id_tipo_origen
     );
 
     -- Obtener el ID del nuevo líquido
@@ -246,6 +261,92 @@ BEGIN
     END CATCH;
 END;
 GO
+
+
+
+
+
+-- Procedimineto para obtener los tipos de variedad de un liquido, este también es usado en la función transferir de Power Apps
+IF OBJECT_ID('dbo.sp_obtener_tipos_variedad', 'P') IS NOT NULL
+DROP PROCEDURE dbo.sp_obtener_tipos_variedad;
+GO
+
+CREATE PROCEDURE sp_obtener_tipos_variedad
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT * FROM tipos_variedad;
+END;
+GO
+
+
+
+
+
+-- Procedimeinto para obtener los tipos de mezcal de un liquido, este también es usado en la función transferir de Power Apps
+IF OBJECT_ID('dbo.sp_obtener_tipos_mezcal', 'P') IS NOT NULL
+DROP PROCEDURE dbo.sp_obtener_tipos_mezcal;
+GO
+
+CREATE PROCEDURE sp_obtener_tipos_mezcal
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT * FROM tipos_mezcal;
+END;
+GO
+
+
+
+
+
+-- Procedimiento para obtener los tipos de corte de un liquido, este también es usado en la función transferir de Power Apps
+IF OBJECT_ID('dbo.sp_obtener_tipos_corte', 'P') IS NOT NULL
+DROP PROCEDURE dbo.sp_obtener_tipos_corte;
+GO
+
+CREATE PROCEDURE sp_obtener_tipos_corte
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT * FROM tipos_corte;
+END;
+GO
+
+
+
+
+
+-- Procemiento para obtener los tipos de marca de un liquido, este también es usado en la función transferir de Power Apps
+IF OBJECT_ID('dbo.sp_obtener_tipos_marca', 'P') IS NOT NULL
+DROP PROCEDURE dbo.sp_obtener_tipos_marca;
+GO
+
+CREATE PROCEDURE sp_obtener_tipos_marca
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT * FROM tipos_marca;
+END;
+GO
+
+
+
+
+
+-- Procedimiento para obtener los tipos de origen de un liquido, este también es usado en la función transferir de Power Apps
+IF OBJECT_ID('dbo.sp_obtener_tipos_origen', 'P') IS NOT NULL
+DROP PROCEDURE dbo.sp_obtener_tipos_origen;
+GO
+
+CREATE PROCEDURE sp_obtener_tipos_origen
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT * FROM tipos_origen;
+END;
+GO
+
 
 
 
