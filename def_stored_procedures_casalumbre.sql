@@ -1292,9 +1292,18 @@ BEGIN
     DROP TABLE #TempTable;
     DROP TABLE #TempActualTable;
 
-    -- Devolver el resultado final
-    SELECT * FROM #TempResult;
+    -- Obtener el nivel máximo
+    DECLARE @max_nivel INT;
+    SELECT @max_nivel = MAX(nivel) FROM #TempResult;
 
+    -- Invertir el nivel y almacenarlo en una tabla temporal junto con los resultados
+    SELECT *, (@max_nivel - nivel) AS nivel_invertido INTO #TempResultInvertido FROM #TempResult;
+
+    -- Devolver el resultado final
+    -- SELECT * FROM #TempResult;
+
+    -- Devolver el resultado invertido
+    SELECT * FROM #TempResultInvertido;
     -- Limpiar la tabla temporal de resultado
     DROP TABLE #TempResult;
 END;
