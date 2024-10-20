@@ -576,7 +576,12 @@ CREATE PROCEDURE sp_insertar_liquido_combinado
     @id_estatus INT,
     @id_contenedor_destino INT,
     @persona_encargada VARCHAR(32),
-    @composicion_liquidos_json NVARCHAR(MAX)
+    @composicion_liquidos_json NVARCHAR(MAX),
+    @id_tipo_variedad INT = NULL,
+    @id_tipo_mezcal INT = NULL,
+    @id_tipo_corte INT = NULL,
+    @id_tipo_marca INT = NULL,
+    @id_tipo_origen INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -789,7 +794,12 @@ BEGIN
             furfural_mg_100mlAA, 
             plomo_mg_L, 
             arsenico_mg_L, 
-            orden_produccion
+            orden_produccion,
+            id_tipo_variedad,
+            id_tipo_mezcal,
+            id_tipo_corte,
+            id_tipo_marca,
+            id_tipo_origen
         )
         VALUES
         (
@@ -805,7 +815,12 @@ BEGIN
             @furfural_mg_100mlAA_total, 
             @plomo_mg_L_total, 
             @arsenico_mg_L_total, 
-            @orden_produccion
+            @orden_produccion,
+            @id_tipo_variedad,
+            @id_tipo_mezcal,
+            @id_tipo_corte,
+            @id_tipo_marca,
+            @id_tipo_origen
         );
 
         -- Actualizar la tabla combinaciones con el id_liquido_combinado
