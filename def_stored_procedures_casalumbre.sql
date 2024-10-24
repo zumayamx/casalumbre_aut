@@ -1174,7 +1174,8 @@ BEGIN
         total_cantidad_combinacion DECIMAL(18, 2),
         porcentaje_recursivo DECIMAL(18, 2),
         nivel INT,
-        traza INT
+        traza INT,
+        fecha_produccion DATE
     );
 
     -- CTE para realizar el trazado del líquido
@@ -1246,13 +1247,15 @@ BEGIN
         SUM(total_cantidad_combinacion) AS total_cantidad_combinacion,
         SUM(porcentaje_recursivo) AS porcentaje_recursivo,
         MIN(nivel) AS nivel,
-        MIN(traza) AS traza
+        MIN(traza) AS traza,
+        fecha_produccion
     FROM 
         CTE_trazabilidad
     GROUP BY 
         id_liquido_componente,
         codigo_componente,
-        tipo_componente
+        tipo_componente,
+        fecha_produccion
     ORDER BY 
         id_liquido_componente;
     
@@ -1275,7 +1278,7 @@ BEGIN
     EXEC sp_obtener_info_contenedor_liquido @id_contenedor = @id_contenedor;
 
     -- Insertar el líquido actual en el conjunto de trazabilidad
-    INSERT INTO #TempResult (id_liquido_componente, codigo_componente, tipo_componente, cantidad_lts, total_cantidad_combinacion, porcentaje_recursivo, nivel, traza)
+    INSERT INTO #TempResult (id_liquido_componente, codigo_componente, tipo_componente, cantidad_lts, total_cantidad_combinacion, porcentaje_recursivo, nivel, traza, fecha_produccion)
     SELECT
         id_liquido AS id_liquido_componente,
         codigo AS codigo_componente,
@@ -1284,7 +1287,8 @@ BEGIN
         cantidad_total_lts AS total_cantidad_combinacion,
         100 AS porcentaje_recursivo,
         0 AS nivel,
-        0 AS traza
+        0 AS traza,
+        fecha_produccion
     FROM
         #TempActualTable;
 
